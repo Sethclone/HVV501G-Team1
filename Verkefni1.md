@@ -143,17 +143,17 @@
 
 ### Brief Use Cases
 
-- **Updating stock [UC4]:**
+- **Updating stock (PATCH) [UC4]:**
   - A staff member encounters some amount of spoiled product. He sends in a request for decreasing the stock in the system, providing the amount and id of the product. The request was sent from an account with staff privileges. The system updates the stock.
 
-- **Register an account [UC6]:** An admin enters a user's details (name, email, role, and password) to create a new profile. The system checks the info and sets up the account.
-- **Sign in [UC7]:** A user logs in with their credentials. The system verifies them and grants API access.
-- **Manage Own Account [UC8]:** A logged-in user updates their personal details, like their password. The system checks the new info and saves the changes.
-- **Admin Manages User Accounts [UC9]:** An admin modifies or deletes a staff member's account. The system checks the admin's permissions and applies the changes.
-- **View Product Details [UC10]:** A user looks up a product by its ID to see its full details, including stock levels, category, price, and images.
-- **View Own Profile/Activity [UC11]:** A user views their own profile to see their account details and a history of their recent activity, like stock changes they've logged.
-- **Flag product for Reorder [UC12]:** A staff member flags a product that's running low. The system updates the product's status so admins know to reorder it.
-- **Update or Remove a Product [UC13]:** An authorized user updates a product's details (like changing the price) or deletes it entirely. The system updates or removes the item from the inventory.
+- **Register an account (POST/PUT) [UC5]:** An admin enters a user's details (name, email, role, and password) to create a new profile. The system checks the info and sets up the account.
+- **Sign in (POST) [UC6]:** A user logs in with their credentials. The system verifies them and grants API access.
+- **Manage Own Account (PATCH) [UC7]:** A logged-in user updates their personal details, like their password. The system checks the new info and saves the changes.
+- **Admin Manages User Accounts (PATCH) [UC8]:** An admin modifies or deletes a staff member's account. The system checks the admin's permissions and applies the changes.
+- **View Product Details (GET) [UC9]:** A user looks up a product by its ID to see its full details, including stock levels, category, price, and images.
+- **View Own Profile/Activity (GET) [UC10]:** A user views their own profile to see their account details and a history of their recent activity, like stock changes they've logged.
+- **Flag product for Reorder (PATCH) [UC11]:** A staff member flags a product that's running low. The system updates the product's status so admins know to reorder it.
+- **Update or Remove a Product (PATCH/DELETE) [UC12]:** An authorized user updates a product's details (like changing the price) or deletes it entirely. The system updates or removes the item from the inventory.
 
 
 ---
