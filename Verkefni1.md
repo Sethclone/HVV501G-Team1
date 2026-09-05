@@ -12,7 +12,7 @@
 - **Who** – needs an accurate and reliable way to track stock without relying on error prone manual spreadsheet
 - **The** – Inventory Management System
 - **Is** – an inventory management API
-- **That** – has acurate, centralized stock records with real-time updates when stock changes. Uses role based access so staff and owners see/do different things and has easy integration into other tools via an API
+- **That** – has accurate, centralized stock records with real-time updates when stock changes. Uses role based access so staff and owners see/do different things and has easy integration into other tools via an API
 - **Unlike** – manual spreadsheets or paper tracking
 - our product is built API first, so it can be integrated into existing POS or ecommerce tools.
 
@@ -146,14 +146,14 @@
 - **Updating stock [UC4]:**
   - A staff member encounters some amount of spoiled product. He sends in a request for decreasing the stock in the system, providing the amount and id of the product. The request was sent from an account with staff privileges. The system updates the stock.
 
-- **Register an account [UC6]:** An admin enters a user's details (name, email, role, and password) to create a new profile. The system checks the info and sets up the account
-- **Sign in [UC7]:** A user logs in with their credentials. The system verifies them and grants API access
-- **Manage Own Account [UC8]:** A logged-in user updates their personal details, like their password. The system checks the new info and saves the changes
-- **Admin Manages User Accounts [UC9]:** An admin modifies or deletes a staff member's account. The system checks the admin's permissions and applies the changes
-- **View Product Details [UC10]:** A user looks up a product by its ID to see its full details, including stock levels, category, price, and images
-- **View Own Profile/Activity [UC11]:** A user views their own profile to see their account details and a history of their recent activity, like stock changes they've logged
-- **Flag product for Reorder [UC12]:** A staff member flags a product that's running low. The system updates the product's status so admins know to reorder it
-- **Update or Remove a Product [UC13]:** An authorized user updates a product's details (like changing the price) or deletes it entirely. The system updates or removes the item from the inventory
+- **Register an account [UC6]:** An admin enters a user's details (name, email, role, and password) to create a new profile. The system checks the info and sets up the account.
+- **Sign in [UC7]:** A user logs in with their credentials. The system verifies them and grants API access.
+- **Manage Own Account [UC8]:** A logged-in user updates their personal details, like their password. The system checks the new info and saves the changes.
+- **Admin Manages User Accounts [UC9]:** An admin modifies or deletes a staff member's account. The system checks the admin's permissions and applies the changes.
+- **View Product Details [UC10]:** A user looks up a product by its ID to see its full details, including stock levels, category, price, and images.
+- **View Own Profile/Activity [UC11]:** A user views their own profile to see their account details and a history of their recent activity, like stock changes they've logged.
+- **Flag product for Reorder [UC12]:** A staff member flags a product that's running low. The system updates the product's status so admins know to reorder it.
+- **Update or Remove a Product [UC13]:** An authorized user updates a product's details (like changing the price) or deletes it entirely. The system updates or removes the item from the inventory.
 
 
 ---
