@@ -144,17 +144,17 @@
 ### Brief Use Cases
 
 - **Updating stock [UC4]:**
-  - A staff members encounters some amount of spoiled product. He sends in a request for decreasing the stock in the system, providing the amount and id of the product. The request was sent from an account with staff privileges. The system updates the stock.
+  - A staff member encounters some amount of spoiled product. He sends in a request for decreasing the stock in the system, providing the amount and id of the product. The request was sent from an account with staff privileges. The system updates the stock.
 
 - **Register an account [UC6]:** An admin submits a users name, email, and password to create a new account -- Finish this
 - **Sign in [UC7]:**
   - Any user who needs access to the system submits username and password. The system hashes the password and compares it to the password hash associated with the user. The system returns some way for the user to identify himself later like JWT.
-- **Manage Own Account [UC8]:** ...
-- **Admin Manages User Accounts [UC9]:** ...
-- **View Product Details [UC10]:** ...
-- **View Own Profile/Activity [UC11]:** ...
-- **Flag product for Reorder [UC12]:** ...
-- **Update or Remove a Product [UC13]:** ...
+- **Manage Own Account [UC8]:** A logged in user changes his own account information, for example name, email or password. The system checks that the user is logged in and that the account being modified matches the authenticated user's own account. The system also needs to check whether the new information is valid, like the email not already being in use for another account.
+- **Admin Manages User Accounts [UC9]:** A logged in admin changes the information of another account. The system checks whether the requester has admin privileges and the relevant information is valid. The account either updates or the system rejects it if information is invalid or the requester is not an admin.
+- **View Product Details [UC10]:** A user submits a product ID, the system checks whether it is valid, and either returns the products information or an error if it's not valid.
+- **View Own Profile/Activity [UC11]:** A logged in user requests to see their own data. The system checks whether the user is authenticated and returns their profile/activity tied to their account, or gives an error if they are not authenticated.
+- **Flag product for Reorder [UC12]:** A logged in staff member submits a product ID they want to flag. The system checks whether the staff member is authenticated and the ID is valid. The system then sets the status flag on the product, or an error if information is invalid or requester lacks permission.
+  - **Update or Remove a Product [UC13]:** A logged in staff member submits the product ID and the relevant changes he wants to make or a delete request. The system checks whether the ID is valid, the authentication and the changes. It then either updates/deletes the product if information is valid, or gives an error if it's invalid.
 - ****
 
 ---
