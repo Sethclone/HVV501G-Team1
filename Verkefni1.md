@@ -154,7 +154,22 @@
 - **View Own Profile/Activity (GET) [UC10]:** A user views their own profile to see their account details and a history of their recent activity, like stock changes they've logged.
 - **Flag product for Reorder (PATCH) [UC11]:** A staff member flags a product that's running low. The system updates the product's status so admins know to reorder it.
 - **Update or Remove a Product (PATCH/DELETE) [UC12]:** An authorized user updates a product's details (like changing the price) or deletes it entirely. The system updates or removes the item from the inventory.
-
+- **Create an order [UC13]:**
+    - A customer submits an order through an agent (i.e sales person, online store or whatever) the agent creates an order in the system, providing the customer information (e.g what products were ordered, amount etc) and possibly additional information that may be provided or inferred. The system updates the stock of items in the system based on the order and returns a confirmation that everything was successful.
+- **View all orders [UC14]:**
+    - A staff member may need to get a list of all orders in order to find a specific one. The staff sends a request to the system and the system returns a paginated list of all order.
+- **Filter orders [UC15]:**
+    - A staff member may need to filter by status (e.g complete and incomplete). He sends the request, along with the wanted status, and the system returns a paginated list of complete or incomplete orders.
+- **Mark order as complete [UC16]:**
+    - A staff member gets an order and gathers the products in it. He then sends a request, providing the id of the order and the system marks it as complete.
+- **View orders established/completed by a specific user [UC17]:**
+    - An admin or staff member may want to see the orders a specific user established or completed. The user sends a request, providing the id of the user's account who established/completed the order and the system returns a paginated list of orders.
+- **Get the user who established/completed an order [UC18]**
+    - An admin or staff member may want to know the user associated with establishing/completing an order. The user sends a request, providing the id of the order and the system returns the id of the user who established/completed it.
+- **Remove an order [UC19]:**
+    - An admin may need to delete an order because it got refunded or it causes issues in the system. The admin sends a request to the system from an authorized account and the system removes it, updating the inventory stock as well.
+- **Modify an order [UC20]:**
+    - A staff member may need to modify an order, like its state or some incorrect information. The staff sends a request from his account, the system validates that the user has the authority for the operation and changes the properties of the order that were requested for change, leaving the ones that were not specified unchanged.
 
 ---
 
