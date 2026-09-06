@@ -211,20 +211,20 @@ Below is a table with prioritized use cases.
 
 ## Project Plan and Schedule
 
-*Note that there are 4 sprints, one for each following assignment. Sprint 1 is two weeks, Sprint 2 and Sprint 3 are three weeks, and the final sprint is two weeks.*
+*Note: 4 sprints — Sprint 1 (Weeks 1–2), Sprint 2 (Weeks 3–5), Sprint 3 (Weeks 6–8), Sprint 4 (Weeks 9–10).*
 
 | Week | Use Cases | Expected Hours | P.O. (Initials) | Sprint | Consultation |
 |------|-----------|-----------------|------------------|--------|---------------|
-| 1 | System Setup, UC4, UC5 | XX | AB | 1 | **A1 Presentation** |
-| 2 | UC1, UC2, UC8 | XX | AB | 1 | Model Drafts |
-| 3 | UC3, UC9, UC10 | XX | CD | 2 | **A2 Presentation** |
-| 4 | UC6, UC15, UC20 | XX | CD | 2 | Dev support |
-| 5 | UC7, UC16 | XX | CD | 2 | Dev support |
-| 6 | UC11, UC12 | XX | EF | 3 | **A3 Presentation** |
-| 7 | UC13, UC17 | XX | EF | 3 | Dev support |
-| 8 | UC14, UC18 | XX | EF | 3 | Dev support |
-| 9 | UC19 | XX | GH | 4 | **A4 Presentation** |
-| 10 | Final Integration & Polish| XX | GH | 4 | Final Review / Dev support |
+| 1 | Project setup, UC4, UC5 | 16 | AIK | 1 | **A1 Presentation** |
+| 2 | UC2, UC8 | 20 | AIK | 1 | Model Drafts |
+| 3 | UC1, UC10 | 18 | UH | 2 | **A2 Presentation** |
+| 4 | UC3, UC6  | 18 | UH | 2 | Dev support |
+| 5 | UC9 , UC20 | 15 | UH | 2 | Dev support |
+| 6 | UC11, UC17 | 25 | SK | 3 | **A3 Presentation** |
+| 7 | UC12, UC18 | 16 | SK | 3 | Dev support |
+| 8 | UC14, UC7, | 18 | SK | 3 | Dev support |
+| 9 | UC13, UC15, UC16 | 18 | FO | 4 | **A4 Presentation** |
+| 10 | UC19, final integration & polish | 5+ | FO | 4 | Final Review |
 
 ---
 
