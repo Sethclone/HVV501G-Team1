@@ -197,22 +197,20 @@ Below is a table with prioritized use cases:
 
 ## Project Plan and Schedule
 
-The example schedule for the 10-week project timeline (starting the week after assignment 1 turn-in) is as follows:
-
 *Note that there are 4 sprints, one for each following assignment. Sprint 1 is two weeks, Sprint 2 and Sprint 3 are three weeks, and the final sprint is two weeks.*
-
-*Decide who is going to be the P.O. for each of the sprints.*
-
-*This is a template for a schedule, adjust as needed.*
 
 | Week | Use Cases | Expected Hours | P.O. (Initials) | Sprint | Consultation |
 |------|-----------|-----------------|------------------|--------|---------------|
-| 1 | None | XX | AB | 1 | **A1 Presentation** |
-| 2 | UC1, Android skeleton | XX | AB | 1 | Model Drafts |
-| 3 | UC2, UC3 | XX | CD | 2 | **A2 Presentation** |
-| 4 | UC4, UC5, UC6 | XX | CD | 2 | Dev support |
-| 5 | UC7, UC8 | XX | CD | 2 | Dev support |
-| 6 | UC9, UC10 | XX | EF | 3 | **A3 Presentation** |
+| 1 | System Setup, UC4, UC5 | XX | AB | 1 | **A1 Presentation** |
+| 2 | UC1, UC2, UC8 | XX | AB | 1 | Model Drafts |
+| 3 | UC3, UC9, UC10 | XX | CD | 2 | **A2 Presentation** |
+| 4 | UC6, UC15, UC20 | XX | CD | 2 | Dev support |
+| 5 | UC7, UC16 | XX | CD | 2 | Dev support |
+| 6 | UC11, UC12 | XX | EF | 3 | **A3 Presentation** |
+| 7 | UC13, UC17 | XX | EF | 3 | Dev support |
+| 8 | UC14, UC18 | XX | EF | 3 | Dev support |
+| 9 | UC19 | XX | GH | 4 | **A4 Presentation** |
+| 10 | Final Integration & Polish| XX | GH | 4 | Final Review / Dev support |
 
 ---
 
