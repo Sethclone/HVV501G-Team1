@@ -143,33 +143,39 @@
 
 ### Brief Use Cases
 
-- **Updating stock (PATCH) [UC4]:**
-  - A staff member encounters some amount of spoiled product. He sends in a request for decreasing the stock in the system, providing the amount and id of the product. The request was sent from an account with staff privileges. The system updates the stock.
+- **Register an account (POST) [UC4]:** An admin enters a new user's details into the system. The system validates the information and creates the new profile.
 
-- **Register an account (POST/PUT) [UC5]:** An admin enters a user's details (name, email, role, and password) to create a new profile. The system checks the info and sets up the account.
-- **Sign in (POST) [UC6]:** A user logs in with their credentials. The system verifies them and grants API access.
-- **Manage Own Account (PATCH) [UC7]:** A logged-in user updates their personal details, like their password. The system checks the new info and saves the changes.
-- **Admin Manages User Accounts (PATCH) [UC8]:** An admin modifies or deletes a staff member's account. The system checks the admin's permissions and applies the changes.
-- **View Product Details (GET) [UC9]:** A user looks up a product by its ID to see its full details, including stock levels, category, price, and images.
-- **View Own Profile/Activity (GET) [UC10]:** A user views their own profile to see their account details and a history of their recent activity, like stock changes they've logged.
-- **Flag product for Reorder (PATCH) [UC11]:** A staff member flags a product that's running low. The system updates the product's status so admins know to reorder it.
-- **Update or Remove a Product (PATCH/DELETE) [UC12]:** An authorized user updates a product's details (like changing the price) or deletes it entirely. The system updates or removes the item from the inventory.
-- **Create an order [UC13]:**
-    - A customer submits an order through an agent (i.e sales person, online store or whatever) the agent creates an order in the system, providing the customer information (e.g what products were ordered, amount etc) and possibly additional information that may be provided or inferred. The system updates the stock of items in the system based on the order and returns a confirmation that everything was successful.
-- **View all orders [UC14]:**
-    - A staff member may need to get a list of all orders in order to find a specific one. The staff sends a request to the system and the system returns a paginated list of all order.
-- **Filter orders [UC15]:**
-    - A staff member may need to filter by status (e.g complete and incomplete). He sends the request, along with the wanted status, and the system returns a paginated list of complete or incomplete orders.
-- **Mark order as complete [UC16]:**
-    - A staff member gets an order and gathers the products in it. He then sends a request, providing the id of the order and the system marks it as complete.
-- **View orders established/completed by a specific user [UC17]:**
-    - An admin or staff member may want to see the orders a specific user established or completed. The user sends a request, providing the id of the user's account who established/completed the order and the system returns a paginated list of orders.
-- **Get the user who established/completed an order [UC18]**
-    - An admin or staff member may want to know the user associated with establishing/completing an order. The user sends a request, providing the id of the order and the system returns the id of the user who established/completed it.
-- **Remove an order [UC19]:**
-    - An admin may need to delete an order because it got refunded or it causes issues in the system. The admin sends a request to the system from an authorized account and the system removes it, updating the inventory stock as well.
-- **Modify an order [UC20]:**
-    - A staff member may need to modify an order, like its state or some incorrect information. The staff sends a request from his account, the system validates that the user has the authority for the operation and changes the properties of the order that were requested for change, leaving the ones that were not specified unchanged.
+- **Sign in (POST) [UC5]:** A user enters their credentials. The system verifies the information and grants API access.
+
+- **Manage Own Account (PUT) [UC6]:** A logged-in user submits updated personal details. The system validates the input and overwrites the existing account information.
+
+- **Admin Manages User Accounts (POST) [UC7]:** An admin accesses a staff member's profile and submits changes to their details. The system confirms the admin's authorization and applies the modifications.
+
+- **View Product Details by ID (GET) [UC8]:** A user requests information for a specific product using its ID. The system retrieves and presents the full item details.
+
+- **Flag product for Reorder (PATCH) [UC9]:** A staff member flags a product experiencing low inventory. The system updates the product's internal status to alert admins.
+
+- **Update or Remove a Product (PATCH/DELETE) [UC10]:** An authorized user modifies a product's details or requests its deletion. The system applies the changes or permanently removes the item from the catalog.
+
+- **Create an order (POST) [UC11]:** An agent submits a new customer order containing selected products. The system records the order, deducts the items from available stock, and returns a confirmation.
+
+- **View all orders (GET) [UC12]:** A staff member requests a list of all system orders. The system retrieves and returns a paginated list of order records.
+
+- **Remove an order (DELETE) [UC13]:** An admin issues a command to delete a refunded order. The system erases the order record and automatically restores the inventory stock.
+
+- **Modify an order (PUT) [UC14]:** A staff member submits corrections to an existing order. The system verifies their authority and overwrites the specified properties.
+
+- **Admin Deletes an Account (DELETE) [UC15]:** An admin requests the permanent deletion of a profile. The system removes their credentials and associations.
+
+- **Create Admin Account (POST) [UC16]:** An administrator inputs details to establish a new user profile. The system provisions the account and explicitly assigns it elevated privileges.
+
+- **View Order with Products (GET) [UC17]:** A user looks up a specific order record. The system retrieves the main order details along with the fully expanded data for every product included in it.
+
+- **Remove Item from Order (DELETE) [UC18]:** A user selects a product to remove from their pending order. The system deletes the relationship between the order and the item.
+
+- **Reassign Order (PUT) [UC19]:** An admin selects an existing order and assigns it to a different user ID. The system transfers ownership of the record to the new account.
+
+- **Upload Profile Picture (POST) [UC20]:** A user uploads an image file to personalize their account. The system saves the file and updates the profile with the new image.
 
 ---
 
