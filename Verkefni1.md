@@ -181,19 +181,33 @@
 
 ## Project Estimation and Prioritization
 
-Below is a table with prioritized use cases:
+Below is a table with prioritized use cases.
 
-*Note what kind of priority system is used. In order? grouped? Is a lower number a higher priority? (Recommended to group and use lower number = higher priority; E.g. P1 is higher priority than P2).*
-
-*Note what kind of metric you use for time estimation, if its person hours, or days, or abstract effort.*
+**Priority System:** 1 most prio, 2 2nd most, 3 least prio
+**Time Estimation Metric:** estimated person-hours required to complete them
 
 | Use Case | Time Estimation | Priority |
 |----------|------------------|----------|
-| UC1 | 10 | P1 |
-| UC2 | 15 | P1 |
-| UC3 | 12 | P2 |
-
----
+| UC1 (Record stock movement) | 10 | P1 |
+| UC2 (Add new product) | 15 | P1 |
+| UC3 (Search and filter) | 12 | P2 |
+| UC4 (Register account) | 8 | P1 |
+| UC5 (Sign in) | 8 | P1 |
+| UC6 (Manage own account) | 6 | P2 |
+| UC7 (Admin manages user) | 8 | P2 |
+| UC8 (View product details) | 5 | P1 |
+| UC9 (Flag product for reorder) | 5 | P3 |
+| UC10 (Update/Remove product) | 8 | P1 |
+| UC11 (Create an order) | 15 | P2 |
+| UC12 (View all orders) | 8 | P2 |
+| UC13 (Remove an order) | 8 | P3 |
+| UC14 (Modify an order) | 10 | P3 |
+| UC15 (Admin deletes account) | 5 | P3 |
+| UC16 (Create admin account) | 5 | P2 |
+| UC17 (View order with products)| 10 | P2 |
+| UC18 (Remove item from order) | 8 | P3 |
+| UC19 (Reassign order) | 5 | P3 |
+| UC20 (Upload profile picture) | 10 | P3 |
 
 ## Project Plan and Schedule
 
