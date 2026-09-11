@@ -150,7 +150,7 @@ ErrorResponse {
 
 | Method | Path | Use Case | Auth required | Owner |
 |---|---|---|---|---|
-| POST | `/api/auth/register` | UC4 | No | P1 |
+| POST | `/api/auth/register` | UC4 | Yes - ADMIN only | P1 |
 | POST | `/api/auth/login` | UC5 | No | P2 |
 | POST | `/api/admin/users` | UC16 | Yes - ADMIN only | P2 |
 | POST | `/api/products` | UC2 | Yes - any authenticated staff | P3 |
