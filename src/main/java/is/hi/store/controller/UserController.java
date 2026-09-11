@@ -1,6 +1,5 @@
-package is.hi.store;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+package is.hi.store.controller;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -8,13 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import is.hi.store.entity.User;
 import is.hi.store.repository.UserRepository;
 
-@SpringBootApplication
-public class StoreApplication {
-    public static void main(String[] args) {
-      SpringApplication.run(StoreApplication.class, args);
-    }
+@RestController
+public class UserController {
+	
+	@Autowired
+	UserRepository repository;
 
-	/*For testing
     @GetMapping("/insert")
     public String hello(@RequestParam(value = "name", defaultValue = "World") String name) {
 	  User test = new User();
@@ -30,6 +28,5 @@ public class StoreApplication {
     @GetMapping("/count")
     public String countTest() {
 	  return String.format("%d", repository.count());
-    }*/
-
+	}
 }
