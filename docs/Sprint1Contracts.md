@@ -4,14 +4,14 @@ Shared reference for everyone working in parallel on UC4, UC5, UC2, UC8, UC16. E
 via PR/comments as decisions get made - don't code against something here until
 its "Status" is Confirmed.
 
-**Sprint 1 deadline:** Sunday 2026-09-20
+**Sprint 1 deadline:** Sunday 20/09/2026
 
 ---
 
 ## 0. Task sign-up
 
 Pick one task
-by **Saturday 2026-09-12 EOD** so work can actually start Sunday morning. The task
+by **Saturday 12/09/2026 EOD** so work can actually start Sunday morning. The task
 codes (P1-P4) below match the "owner" labels used everywhere else in this doc, so
 once you've claimed one, every section already tells you what's yours.
 
