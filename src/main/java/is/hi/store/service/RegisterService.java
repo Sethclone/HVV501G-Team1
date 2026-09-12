@@ -55,7 +55,7 @@ class RegisterServiceImplementation implements RegisterService {
 				user.setUsername("root");
 				user.setEmail("root@root.com");
 				user.setPassword(passwordEncoder.encode("password"));
-				user.setRole(Role.STAFF);
+				user.setRole(Role.ADMIN);
 				userRepository.save(user);
 			}
 		};
