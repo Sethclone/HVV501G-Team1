@@ -51,6 +51,6 @@ public class RegisterController {
 	@GetMapping("/findById")
 	public String findById(@RequestParam(value="id") long id) {
 		User user = registerService.findById(id);
-		return String.format("%s\n%s\n%s\n", user.getUsername(), user.getPassword(), user.getEmail());
+		return String.format("%s\n%s\n%s\n%s\n", user.getUsername(), user.getPassword(), user.getEmail(), user.getRole());
 	}
 }
