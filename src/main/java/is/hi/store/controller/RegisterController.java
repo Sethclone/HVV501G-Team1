@@ -12,16 +12,9 @@ import org.springframework.http.MediaType;
 import is.hi.store.entity.User;
 import is.hi.store.entity.User.Role;
 import is.hi.store.service.RegisterService;
+import is.hi.store.dto.RegisterRequest;
+import is.hi.store.dto.RegisterResponse;
 
-class RegisterRequest {
-	private String username;
-	private String password;
-	private String email;
-
-	public String getUsername() {return username;}
-	public String getPassword() {return password;}
-	public String getEmail() {return email;}
-}
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,13 +27,12 @@ public class RegisterController {
 	}
 
 	@PostMapping("/register")
-	public String hello(
-		@RequestHeader("Authorization") String auth,
+	public RegisterResponse register(
 		@RequestBody RegisterRequest request
 		)
 	{
-		registerService.register(request.getUsername(), request.getEmail(), request.getPassword(), Role.STAFF);
-		return auth;
+		RegisterResponse response = registerService.register(request.getUsername(), request.getEmail(), request.getPassword(), Role.STAFF);
+		return response;
 	}
 
 	@GetMapping("/count")

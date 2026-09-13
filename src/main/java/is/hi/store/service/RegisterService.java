@@ -3,6 +3,7 @@ package is.hi.store.service;
 import is.hi.store.repository.UserRepository;
 import is.hi.store.entity.User;
 import is.hi.store.entity.User.Role;
+import is.hi.store.dto.RegisterResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -12,7 +13,7 @@ import org.springframework.boot.CommandLineRunner;
 
 
 public interface RegisterService {
-	void register(String username, String email, String password, Role role);
+	RegisterResponse register(String username, String email, String password, Role role);
 	long count();
 	User findById(long id);
 }
@@ -24,7 +25,7 @@ class RegisterServiceImplementation implements RegisterService {
 	@Autowired 
 	private PasswordEncoder passwordEncoder;
 
-	public void register(
+	public RegisterResponse register(
 	String username,
 	String email,
 	String password,
@@ -36,7 +37,9 @@ class RegisterServiceImplementation implements RegisterService {
 		user.setPassword(passwordEncoder.encode(password));
 		user.setRole(role);
 
-		userRepository.save(user);
+		User newUser = userRepository.save(user);
+		System.out.println(newUser.getUsername());
+		return new RegisterResponse(newUser.getUsername(), newUser.getPassword(), newUser.getEmail());
 	}
 
 	public long count() {
