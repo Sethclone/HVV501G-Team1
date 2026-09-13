@@ -18,10 +18,9 @@ public class User {
 	@Column(name="role")
 	private Role role;
 	@Column(name="createdAt")
-	@Temporal(TemporalType.DATE)
 	private Instant createdAt;
 
-	public User() {};
+	public User() {createdAt = Instant.now();}
 
 	public void setUsername(String name) {this.name=name;}
 	public void setPassword(String password) {this.password = password;}
