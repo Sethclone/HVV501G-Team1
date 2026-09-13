@@ -38,8 +38,7 @@ class RegisterServiceImplementation implements RegisterService {
 		user.setRole(role);
 
 		User newUser = userRepository.save(user);
-		System.out.println(newUser.getUsername());
-		return new RegisterResponse(newUser.getUsername(), newUser.getPassword(), newUser.getEmail());
+		return new RegisterResponse(newUser);
 	}
 
 	public long count() {
