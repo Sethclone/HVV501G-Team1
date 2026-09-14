@@ -9,7 +9,7 @@ public interface UserRepository extends Repository<User, Long> {
 	User save(User user);
 	User findById(long id);
 	Long count();
-	@Query("select count(p) = 1 from User p where p.role = ?1")
+	@Query("select count(p) >= 1 from User p where p.role = ?1")
 	boolean findExistsByRole(Role role);
 	Optional<User> findByEmail(String email);
 }

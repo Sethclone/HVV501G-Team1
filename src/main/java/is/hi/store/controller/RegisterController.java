@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import is.hi.store.entity.User;
 import is.hi.store.entity.User.Role;
@@ -35,6 +37,15 @@ public class RegisterController {
 		return response;
 	}
 
+	@Bean 
+	public CommandLineRunner commandLineRunner() {
+		return args -> {
+			if(!registerService.findExistsByRole(Role.ADMIN)) 
+				registerService.register("root", "root@root.com", "password", Role.ADMIN);
+		};
+	}
+
+	//Debug only
 	@GetMapping("/count")
 	public String count() {
 		return String.format("%d\n", registerService.count());
