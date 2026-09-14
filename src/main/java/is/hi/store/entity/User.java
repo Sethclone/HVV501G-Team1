@@ -15,6 +15,7 @@ public class User {
 	private String email;
 	@Column(name="password")
 	private String password;
+	@Enumerated(EnumType.STRING)
 	@Column(name="role")
 	private Role role;
 	@Column(name="createdAt")
