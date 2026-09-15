@@ -18,7 +18,7 @@ once you've claimed one, every section already tells you what's yours.
 | Task | Covers | Est. hours | Claimed by |
 |---|---|---|------------|
 | **P1** | Project setup + `User`/`Role` entity + admin seeding + UC4 (Register) | ~15h | Aron       |
-| **P2** | UC5 (Sign in) + JWT/role-guard security config + UC16 (Create admin) | ~15h | _open_     |
+| **P2** | UC5 (Sign in) + JWT/role-guard security config + UC16 (Create admin) | ~15h | Unnar     |
 | **P3** | `Product` entity + UC2 (Add product, incl. image upload) | ~15h | Siggi |
 | **P4** | UC8 (View product by id) + class diagram + sequence diagram | ~11h | _open_     |
 
