@@ -18,6 +18,11 @@ public class ApiExceptionHandler {
 		return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
 	}
 
+	@ExceptionHandler(EmailAlreadyExistsException.class)
+	public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex, HttpServletRequest request) {
+		return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+	}
+
 	private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest request) {
 		ErrorResponse body = new ErrorResponse(
 			Instant.now(),
