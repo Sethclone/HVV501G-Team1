@@ -4,6 +4,7 @@ import is.hi.store.repository.UserRepository;
 import is.hi.store.entity.User;
 import is.hi.store.entity.User.Role;
 import is.hi.store.dto.RegisterResponse;
+import is.hi.store.exception.EmailAlreadyExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +30,10 @@ class RegisterServiceImplementation implements RegisterService {
 	String email,
 	String password,
 	Role role) {
+		if (userRepository.findByEmail(email).isPresent()) {
+			throw new EmailAlreadyExistsException("Email already in use: " + email);
+		}
+
 		User user = new User();
 		user.setUsername(username);
 		user.setEmail(email);
