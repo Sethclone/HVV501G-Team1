@@ -1,10 +1,15 @@
 package is.hi.store.controller;
 
 import is.hi.store.config.JwtService;
+import is.hi.store.service.AuthService;
+import is.hi.store.service.UserService;
 import is.hi.store.dto.LoginRequest;
 import is.hi.store.dto.LoginResponse;
+import is.hi.store.dto.RegisterRequest;
+import is.hi.store.dto.RegisterResponse;
 import is.hi.store.dto.UserSummary;
 import is.hi.store.entity.User;
+import is.hi.store.entity.User.Role;
 import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +18,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
 
 import java.time.Instant;
 
@@ -20,34 +27,38 @@ import java.time.Instant;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-	private final UserRepository userRepository;
-	private final PasswordEncoder passwordEncoder;
+	private final AuthService authService;
 	private final JwtService jwtService;
+	private final UserService userService;
 
-	public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
-		this.userRepository = userRepository;
-		this.passwordEncoder = passwordEncoder;
+	public AuthController(AuthService authService, JwtService jwtService, UserService userService) {
+		this.authService = authService;
 		this.jwtService = jwtService;
+		this.userService = userService;
+	}	
+
+	@PostMapping("/register")
+	public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request)
+	{
+		User newUser = authService.register(request, Role.STAFF);
+		return ResponseEntity.ok(new RegisterResponse(newUser));
 	}
 
 	@PostMapping("/login")
 	public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-		// Same error either way (bad email vs bad password) - don't let a caller use this
-		// endpoint to enumerate which registered emails exist.
-		if (request.getEmail() == null || request.getPassword() == null) {
-			throw new InvalidCredentialsException("Invalid email or password");
-		}
 
-		User user = userRepository.findByEmail(request.getEmail())
-			.orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
-
-		if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-			throw new InvalidCredentialsException("Invalid email or password");
-		}
-
+		User user = authService.login(request);
 		String token = jwtService.generateToken(user);
 		Instant expiresAt = jwtService.extractExpiration(token);
 
 		return ResponseEntity.ok(new LoginResponse(token, expiresAt, new UserSummary(user)));
+	}
+
+	@Bean 
+	public CommandLineRunner commandLineRunner() {
+		return args -> {
+			if(!userService.findExistsByRole(Role.ADMIN))
+				authService.register(new RegisterRequest("root", "root@root.com", "password"), Role.ADMIN);
+		};
 	}
 }

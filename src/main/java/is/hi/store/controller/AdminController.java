@@ -3,7 +3,8 @@ package is.hi.store.controller;
 import is.hi.store.dto.CreateAdminRequest;
 import is.hi.store.dto.RegisterResponse;
 import is.hi.store.entity.User.Role;
-import is.hi.store.service.RegisterService;
+import is.hi.store.entity.User;
+import is.hi.store.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,15 +17,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin")
 public class AdminController {
 
-	private final RegisterService registerService;
+	private final AuthService authService;
 
-	public AdminController(RegisterService registerService) {
-		this.registerService = registerService;
+	public AdminController(AuthService authService) {
+		this.authService = authService;
 	}
 
 	@PostMapping("/users")
 	public ResponseEntity<RegisterResponse> createAdmin(@RequestBody CreateAdminRequest request) {
-		RegisterResponse response = registerService.register(request.getName(), request.getEmail(), request.getPassword(), Role.ADMIN);
+		User admin = authService.register(request, Role.ADMIN);
+		RegisterResponse response = new RegisterResponse(admin);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 }
