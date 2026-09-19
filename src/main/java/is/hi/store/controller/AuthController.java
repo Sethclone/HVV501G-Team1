@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpStatus;
 
 import java.time.Instant;
 
@@ -41,7 +42,7 @@ public class AuthController {
 	public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request)
 	{
 		User newUser = authService.register(request, Role.STAFF);
-		return ResponseEntity.ok(new RegisterResponse(newUser));
+		return ResponseEntity.status(HttpStatus.CREATED).body(new RegisterResponse(newUser));
 	}
 
 	@PostMapping("/login")
