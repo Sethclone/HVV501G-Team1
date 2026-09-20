@@ -1,45 +1,46 @@
 package is.hi.store.dto;
 
-import org.springframework.validation.FieldError;
-
 import java.time.Instant;
 import java.util.List;
 
 public class ErrorResponse {
-    private Instant timestamp;
-    private int status;
-    private String error;
-    private String message;
-    private String path;
-    private List<FieldError> fieldErrors;
+	private Instant timestamp;
+	private int status;
+	private String error;
+	private String message;
+	private String path;
+	private List<FieldErrorDetail> fieldErrors;
 
-    public ErrorResponse(int status, String error, String message, String path){
-        this.timestamp = Instant.now();
-        this.status = status;
-        this.error = error;
-        this.message = message;
-        this.path = path;
-    }
+	public ErrorResponse() {}
 
-    public Instant getTimestamp() { return timestamp; }
-    public int getStatus() { return status; }
-    public String getError() { return error; }
-    public String getMessage() { return message; }
-    public String getPath() { return path; }
-    public List<FieldError> getFieldErrors() { return fieldErrors; }
-    public void setFieldErrors(List<FieldError> fieldErrors) { this.fieldErrors = fieldErrors; }
+	public ErrorResponse(int status, String error, String message, String path) {
+		this(Instant.now(), status, error, message, path, null);
+	}
 
-    public static class FieldError {
-        private String field;
-        private String message;
+	public ErrorResponse(Instant timestamp, int status, String error, String message, String path, List<FieldErrorDetail> fieldErrors) {
+		this.timestamp = timestamp;
+		this.status = status;
+		this.error = error;
+		this.message = message;
+		this.path = path;
+		this.fieldErrors = fieldErrors;
+	}
 
-        public FieldError(String field, String message){
-            this.field = field;
-            this.message = message;
-        }
+	public Instant getTimestamp() { return timestamp; }
+	public void setTimestamp(Instant timestamp) { this.timestamp = timestamp; }
 
-        public String getField() { return field; }
-        public String getMessage() { return message; }
+	public int getStatus() { return status; }
+	public void setStatus(int status) { this.status = status; }
 
-    }
+	public String getError() { return error; }
+	public void setError(String error) { this.error = error; }
+
+	public String getMessage() { return message; }
+	public void setMessage(String message) { this.message = message; }
+
+	public String getPath() { return path; }
+	public void setPath(String path) { this.path = path; }
+
+	public List<FieldErrorDetail> getFieldErrors() { return fieldErrors; }
+	public void setFieldErrors(List<FieldErrorDetail> fieldErrors) { this.fieldErrors = fieldErrors; }
 }

@@ -1,0 +1,72 @@
+@baseUrl = http://localhost:8090
+
+### 1. Log in as the seeded admin
+# @name loginAdmin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "root@root.com",
+  "password": "password"
+}
+
+### 2. Create a second admin (UC16) - uses the token from request 1 automatically
+POST {{baseUrl}}/api/admin/users
+Content-Type: application/json
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+
+{
+  "name": "Second Admin",
+  "email": "admin2@example.com",
+  "password": "secret123"
+}
+
+### 3. Register a normal staff user (UC4)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "staffer",
+  "email": "staffer@example.com",
+  "password": "secret123"
+}
+
+### 4. Log in as that staff user
+# @name loginStaff
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "staffer@example.com",
+  "password": "secret123"
+}
+
+### 5. Staff tries to create an admin - expect 403 Forbidden
+POST {{baseUrl}}/api/admin/users
+Content-Type: application/json
+Authorization: Bearer {{loginStaff.response.body.$.token}}
+
+{
+  "name": "Should Not Work",
+  "email": "shouldnotwork@example.com",
+  "password": "secret123"
+}
+
+### 6. No token at all - expect 401 Unauthorized
+POST {{baseUrl}}/api/admin/users
+Content-Type: application/json
+
+{
+  "name": "No Token",
+  "email": "notoken@example.com",
+  "password": "secret123"
+}
+
+### 7. Wrong password - expect 401, same message as a nonexistent email would give
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "root@root.com",
+  "password": "wrong-password"
+}
