@@ -13,6 +13,10 @@ public class ErrorResponse {
 
 	public ErrorResponse() {}
 
+	public ErrorResponse(int status, String error, String message, String path) {
+		this(Instant.now(), status, error, message, path, null);
+	}
+
 	public ErrorResponse(Instant timestamp, int status, String error, String message, String path, List<FieldErrorDetail> fieldErrors) {
 		this.timestamp = timestamp;
 		this.status = status;

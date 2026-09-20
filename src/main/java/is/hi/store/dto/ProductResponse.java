@@ -1,10 +1,10 @@
 package is.hi.store.dto;
 
+import is.hi.store.entity.Product;
 import java.math.BigDecimal;
 import java.time.Instant;
 
 public class ProductResponse {
-
     private Long id;
     private String name;
     private String category;
@@ -14,6 +14,16 @@ public class ProductResponse {
     private boolean reorderFlagged;
     private Instant createdAt;
 
+    public ProductResponse(Product product){
+        this.id = product.getId();
+        this.name = product.getName();
+        this.category = product.getCategory();
+        this.price = product.getPrice();
+        this.stockQuantity = product.getStockQuantity();
+        this.imageUrl = product.getImageUrl();
+        this.reorderFlagged = product.isReorderFlagged();
+        this.createdAt = product.getCreatedAt();
+    }
     public ProductResponse() {}
 
     public Long getId() {
