@@ -59,7 +59,7 @@ public class AuthController {
 	public CommandLineRunner commandLineRunner() {
 		return args -> {
 			if(!userService.findExistsByRole(Role.ADMIN))
-				authService.register(new RegisterRequest("root", "root@root.com", "password"), Role.ADMIN);
+				authService.register(new RegisterRequest("root", "root@example.com", "password"), Role.ADMIN);
 		};
 	}
 }
