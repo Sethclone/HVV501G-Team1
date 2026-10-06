@@ -2,12 +2,20 @@ package is.hi.store.service;
 
 import is.hi.store.dto.ProductResponse;
 import is.hi.store.entity.Product;
+import is.hi.store.entity.User;
+import is.hi.store.entity.StockMovement;
 import is.hi.store.exception.ProductNotFoundException;
+import is.hi.store.exception.ProductStockException;
 import is.hi.store.repository.ProductRepository;
+import is.hi.store.repository.UserRepository;
+import is.hi.store.repository.StockMovementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import is.hi.store.dto.ProductCreateRequest;
+import is.hi.store.dto.StockMovementRequest;
+import is.hi.store.dto.StockMovementResponse;
+import is.hi.store.entity.StockMovement.MovementType;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -21,25 +29,60 @@ import java.nio.file.Path;
 public interface ProductService {
     ProductResponse getProductById(Long id);
     ProductResponse createProduct(ProductCreateRequest request);
+	StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request);
 }
 
 @Service
 class ProductServiceImplementation implements ProductService {
     private final ProductRepository productRepository;
+	private final UserRepository userRepository;
+	private final StockMovementRepository stockMovementRepository;
     private final String uploadDirectory = "uploads/";
   
-    public ProductServiceImplementation(ProductRepository productRepository) {
+    public ProductServiceImplementation(
+		ProductRepository productRepository,
+		UserRepository userRepository,
+		StockMovementRepository stockMovementRepository
+	) {
         this.productRepository = productRepository;
+		this.userRepository = userRepository;
+		this.stockMovementRepository = stockMovementRepository;
     }
 
     public ProductResponse getProductById(Long id){
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
         return new ProductResponse(product);
     }
+
+	public StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request) {
+		Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
+		User user = userRepository.findById(userId);
+		if(request.getType() == MovementType.REMOVE && product.getStockQuantity() < request.getQuantity())
+			throw new ProductStockException(productId);
+	
+		int currentStockQuantity = product.getStockQuantity();
+		int movementQuantity = request.getQuantity();
+
+		if(request.getType() == MovementType.ADD)
+			product.setStockQuantity(currentStockQuantity + movementQuantity);
+		else
+			product.setStockQuantity(currentStockQuantity - movementQuantity);
+
+		productRepository.save(product);
+
+		StockMovement stockMovement = new StockMovement();
+		stockMovement.setProduct(product);
+		stockMovement.setQuantity(request.getQuantity());
+		stockMovement.setType(request.getType());
+		stockMovement.setPerformedBy(user);
+		stockMovementRepository.save(stockMovement);
+
+		return new StockMovementResponse(stockMovement, product.getStockQuantity());
+
+	}
     public ProductResponse createProduct(ProductCreateRequest request) {
         String imageUrl = null;
         MultipartFile file = request.getImage();
-
 
         if (file != null) {
             try {
