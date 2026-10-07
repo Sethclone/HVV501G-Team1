@@ -57,16 +57,18 @@ class ProductServiceImplementation implements ProductService {
 	public StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request) {
 		Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
 		User user = userRepository.findById(userId);
-		if(request.getType() == MovementType.REMOVE && product.getStockQuantity() < request.getQuantity())
-			throw new ProductStockException(productId);
 	
 		int currentStockQuantity = product.getStockQuantity();
 		int movementQuantity = request.getQuantity();
 
 		if(request.getType() == MovementType.ADD)
 			product.setStockQuantity(currentStockQuantity + movementQuantity);
-		else
-			product.setStockQuantity(currentStockQuantity - movementQuantity);
+		else {
+			if(product.getStockQuantity() < request.getQuantity())
+				throw new ProductStockException(productId);
+			else
+				product.setStockQuantity(currentStockQuantity - movementQuantity);
+		}
 
 		productRepository.save(product);
 
@@ -75,6 +77,7 @@ class ProductServiceImplementation implements ProductService {
 		stockMovement.setQuantity(request.getQuantity());
 		stockMovement.setType(request.getType());
 		stockMovement.setPerformedBy(user);
+
 		stockMovementRepository.save(stockMovement);
 
 		return new StockMovementResponse(stockMovement, product.getStockQuantity());
