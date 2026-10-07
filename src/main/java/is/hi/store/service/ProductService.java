@@ -30,6 +30,7 @@ public interface ProductService {
     ProductResponse getProductById(Long id);
     ProductResponse createProduct(ProductCreateRequest request);
 	StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request);
+	void flagProduct(long id, boolean flag);
 }
 
 @Service
@@ -83,6 +84,7 @@ class ProductServiceImplementation implements ProductService {
 		return new StockMovementResponse(stockMovement, product.getStockQuantity());
 
 	}
+
     public ProductResponse createProduct(ProductCreateRequest request) {
         String imageUrl = null;
         MultipartFile file = request.getImage();
@@ -113,6 +115,13 @@ class ProductServiceImplementation implements ProductService {
 
         return mapToResponse(savedProduct);
     }
+
+	public void flagProduct(long id, boolean flag) {
+		Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+		product.setReorderFlagged(flag);
+
+		productRepository.save(product);
+	}
 
     private ProductResponse mapToResponse(Product product) {
         ProductResponse response = new ProductResponse();
