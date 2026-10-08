@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,10 +40,14 @@ class UserServiceImplementation implements UserService {
 		List<FieldErrorDetail> errors = new ArrayList<>();
 		if (request.getName() != null && request.getName().isBlank()) {
 			errors.add(new FieldErrorDetail("name", "Name must not be blank"));
+		} else if (request.getName() != null && request.getName().length() > 255) {	// default column length
+			errors.add(new FieldErrorDetail("name", "Name must be at most 255 characters"));
 		}
 		if (request.getPassword() != null) {
 			if (request.getPassword().length() < 8) {
 				errors.add(new FieldErrorDetail("password", "Password must be at least 8 characters"));
+			} else if (request.getPassword().getBytes(StandardCharsets.UTF_8).length > 72) {	// BCrypt hard limit, encode() throws past it
+				errors.add(new FieldErrorDetail("password", "Password must be at most 72 bytes"));
 			}
 			// Re-auth so a stolen token can't lock the owner out - only an admin could recover the account.
 			if (request.getCurrentPassword() == null || !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {

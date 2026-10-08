@@ -62,6 +62,15 @@ class UserControllerTests {
 	}
 
 	@Test
+	void rejectsTooLongNameAndPassword() throws Exception {
+		String token = staffToken("long@example.com");
+		// Without these checks the DB column (255) and BCrypt (72 bytes) would blow up with a 500.
+		updateMe(token, "{\"name\":\"" + "n".repeat(256) + "\",\"password\":\"" + "p".repeat(73) + "\",\"currentPassword\":\"oldpassword\"}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fieldErrors.length()").value(2));
+	}
+
+	@Test
 	void passwordChangeRequiresCurrentPassword() throws Exception {
 		String token = staffToken("reauth@example.com");
 		updateMe(token, "{\"password\":\"newpassword\"}")

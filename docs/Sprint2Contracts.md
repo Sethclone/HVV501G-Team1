@@ -46,7 +46,7 @@ until your primary task is done and pushed.
 | 2 | Stock movement below zero | Reject with `400` if a `REMOVE` would take stock below 0 (per UC1 extension 2a in `Verkefni1.md`) | Confirmed |
 | 3 | ~~UC6 email change collision~~ | Dropped - see #5, users can't change their own email, so there's nothing to collide | Dropped |
 | 4 | UC6 role field | `UpdateAccountRequest` never has a role field - a user can never self-promote via this endpoint, same reasoning as UC4's admin-only registration | Confirmed |
-| 5 | UC6 editable fields | Name and password only. Email is a work email assigned by the admin who created the account, so it's not self-editable (admin-side change can come with UC7). Changing the password requires `currentPassword` - in an invite-only system a stolen token could otherwise lock the owner out, and only an admin could recover the account. Password min length 8. | Confirmed |
+| 5 | UC6 editable fields | Name and password only. Email is a work email assigned by the admin who created the account, so it's not self-editable (admin-side change can come with UC7). Changing the password requires `currentPassword` - in an invite-only system a stolen token could otherwise lock the owner out, and only an admin could recover the account. Password 8 chars to 72 bytes (72 is BCrypt's hard limit), name max 255 chars. | Confirmed |
 
 ---
 
