@@ -44,8 +44,9 @@ until your primary task is done and pushed.
 |---|----------|----------|--------|
 | 1 | Pagination defaults (UC3) | `page=0, size=20`, max `size=100` | Proposed |
 | 2 | Stock movement below zero | Reject with `400` if a `REMOVE` would take stock below 0 (per UC1 extension 2a in `Verkefni1.md`) | Confirmed |
-| 3 | UC6 email change collision | `409 Conflict` if the new email belongs to another account - reuse the existing `EmailAlreadyExistsException` pattern from Sprint 1 | Confirmed |
+| 3 | ~~UC6 email change collision~~ | Dropped - see #5, users can't change their own email, so there's nothing to collide | Dropped |
 | 4 | UC6 role field | `UpdateAccountRequest` never has a role field - a user can never self-promote via this endpoint, same reasoning as UC4's admin-only registration | Confirmed |
+| 5 | UC6 editable fields | Name and password only. Email is a work email assigned by the admin who created the account, so it's not self-editable (admin-side change can come with UC7). Changing the password requires `currentPassword` - in an invite-only system a stolen token could otherwise lock the owner out, and only an admin could recover the account. Password 8 chars to 72 bytes (72 is BCrypt's hard limit), name max 255 chars. | Confirmed |
 
 ---
 
@@ -81,7 +82,7 @@ ProductUpdateRequest   { name?, category?, price?, stockQuantity? }   // all opt
 
 PagedResponse<T>       { content, page, size, totalElements, totalPages }
 
-UpdateAccountRequest   { name?, email?, password? }        // no role field, see decision #5
+UpdateAccountRequest   { name?, password?, currentPassword? }   // no role/email field, see decisions #4, #5. Responds with UserSummary
 ```
 
 Reuse existing `ProductResponse`, `UserSummary`, `ErrorResponse` for responses - don't make new ones that duplicate them.
@@ -102,6 +103,10 @@ New response code: `204 No Content` on a successful delete. Everything else reus
 400/401/403/404/409 pattern from Sprint 1 - same `ErrorResponse` shape, same
 `GlobalExceptionHandler`/`ApiExceptionHandler` split (controller exceptions vs. filter-chain
 auth failures).
+
+For `400`s: there's no validation starter, so validate manually and throw
+`InvalidRequestException(List<FieldErrorDetail>)` - `ApiExceptionHandler` turns it into a `400`
+`ErrorResponse` with `fieldErrors` populated (added with UC6, reuse it for UC1/UC10).
 
 ### Extensions to handle (per `Verkefni1.md`)
 
