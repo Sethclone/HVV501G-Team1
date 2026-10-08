@@ -5,4 +5,5 @@ public class ReorderRequest {
 
 	public ReorderRequest() {}
 	public boolean getFlag() {return flagged;}
+	public void setFlagged(boolean flagged) {this.flagged = flagged;}
 }

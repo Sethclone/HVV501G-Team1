@@ -1,6 +1,7 @@
 package is.hi.store.service;
 
 import is.hi.store.dto.ProductResponse;
+import is.hi.store.dto.ReorderResponse;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
 import is.hi.store.entity.StockMovement;
@@ -32,7 +33,7 @@ public interface ProductService {
     ProductResponse getProductById(Long id);
     ProductResponse createProduct(ProductCreateRequest request);
 	StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request);
-	void flagProduct(long id, boolean flag);
+	ReorderResponse flagProduct(long id, boolean flag);
 }
 
 @Service
@@ -124,11 +125,12 @@ class ProductServiceImplementation implements ProductService {
         return mapToResponse(savedProduct);
     }
 
-	public void flagProduct(long id, boolean flag) {
+	public ReorderResponse flagProduct(long id, boolean flag) {
 		Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
 		product.setReorderFlagged(flag);
 
 		productRepository.save(product);
+		return new ReorderResponse(product.getId(), flag);
 	}
 
     private ProductResponse mapToResponse(Product product) {
