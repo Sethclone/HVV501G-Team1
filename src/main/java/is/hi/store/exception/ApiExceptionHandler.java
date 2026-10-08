@@ -23,9 +23,11 @@ public class ApiExceptionHandler {
 		return build(HttpStatus.CONFLICT, ex.getMessage(), request);
 	}
 
-	@ExceptionHandler(ProductStockException.class)
-	public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(ProductStockException ex, HttpServletRequest request) {
-		return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+	@ExceptionHandler(InvalidRequestException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidRequest(InvalidRequestException ex, HttpServletRequest request) {
+		ResponseEntity<ErrorResponse> response = build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+		response.getBody().setFieldErrors(ex.getFieldErrors());
+		return response;
 	}
 
 	private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest request) {

@@ -1,7 +1,6 @@
 package is.hi.store.dto;
 import is.hi.store.entity.StockMovement.MovementType;
 
-
 public class StockMovementRequest {
 	private int quantity;
 	private MovementType type;

@@ -5,7 +5,7 @@ import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
 import is.hi.store.entity.StockMovement;
 import is.hi.store.exception.ProductNotFoundException;
-import is.hi.store.exception.ProductStockException;
+import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.repository.ProductRepository;
 import is.hi.store.repository.UserRepository;
 import is.hi.store.repository.StockMovementRepository;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import is.hi.store.dto.ProductCreateRequest;
 import is.hi.store.dto.StockMovementRequest;
+import is.hi.store.dto.FieldErrorDetail;
 import is.hi.store.dto.StockMovementResponse;
 import is.hi.store.entity.StockMovement.MovementType;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.*;
 
 public interface ProductService {
     ProductResponse getProductById(Long id);
@@ -58,18 +60,24 @@ class ProductServiceImplementation implements ProductService {
 	public StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request) {
 		Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
 		User user = userRepository.findById(userId);
-	
+
+		List<FieldErrorDetail> errors = new ArrayList<>();
+
 		int currentStockQuantity = product.getStockQuantity();
 		int movementQuantity = request.getQuantity();
 
+		if(movementQuantity < 0) 
+			errors.add(new FieldErrorDetail("quantity", "Quantity must be a positive number"));
+		if(request.getType() == MovementType.REMOVE && currentStockQuantity < movementQuantity)
+			errors.add(new FieldErrorDetail("stock", "Product Stock is too low for this operation"));
+
+		if(!errors.isEmpty())
+			throw new InvalidRequestException(errors);
+
 		if(request.getType() == MovementType.ADD)
 			product.setStockQuantity(currentStockQuantity + movementQuantity);
-		else {
-			if(product.getStockQuantity() < request.getQuantity())
-				throw new ProductStockException(productId);
-			else
-				product.setStockQuantity(currentStockQuantity - movementQuantity);
-		}
+		else
+			product.setStockQuantity(currentStockQuantity - movementQuantity);
 
 		productRepository.save(product);
 
