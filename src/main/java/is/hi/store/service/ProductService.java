@@ -1,13 +1,23 @@
 package is.hi.store.service;
 
 import is.hi.store.dto.ProductResponse;
+import is.hi.store.dto.ReorderResponse;
 import is.hi.store.entity.Product;
+import is.hi.store.entity.User;
+import is.hi.store.entity.StockMovement;
 import is.hi.store.exception.ProductNotFoundException;
+import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.repository.ProductRepository;
+import is.hi.store.repository.UserRepository;
+import is.hi.store.repository.StockMovementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import is.hi.store.dto.ProductCreateRequest;
+import is.hi.store.dto.StockMovementRequest;
+import is.hi.store.dto.FieldErrorDetail;
+import is.hi.store.dto.StockMovementResponse;
+import is.hi.store.entity.StockMovement.MovementType;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -17,29 +27,76 @@ import java.time.format.DateTimeFormatter;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.*;
 
 public interface ProductService {
     ProductResponse getProductById(Long id);
     ProductResponse createProduct(ProductCreateRequest request);
+	StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request);
+	ReorderResponse flagProduct(long id, boolean flag);
 }
 
 @Service
 class ProductServiceImplementation implements ProductService {
     private final ProductRepository productRepository;
+	private final UserRepository userRepository;
+	private final StockMovementRepository stockMovementRepository;
     private final String uploadDirectory = "uploads/";
   
-    public ProductServiceImplementation(ProductRepository productRepository) {
+    public ProductServiceImplementation(
+		ProductRepository productRepository,
+		UserRepository userRepository,
+		StockMovementRepository stockMovementRepository
+	) {
         this.productRepository = productRepository;
+		this.userRepository = userRepository;
+		this.stockMovementRepository = stockMovementRepository;
     }
 
     public ProductResponse getProductById(Long id){
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
         return new ProductResponse(product);
     }
+
+	public StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request) {
+		Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
+		User user = userRepository.findById(userId);
+
+		List<FieldErrorDetail> errors = new ArrayList<>();
+
+		int currentStockQuantity = product.getStockQuantity();
+		int movementQuantity = request.getQuantity();
+
+		if(movementQuantity < 0) 
+			errors.add(new FieldErrorDetail("quantity", "Quantity must be a positive number"));
+		if(request.getType() == MovementType.REMOVE && currentStockQuantity < movementQuantity)
+			errors.add(new FieldErrorDetail("stock", "Product Stock is too low for this operation"));
+
+		if(!errors.isEmpty())
+			throw new InvalidRequestException(errors);
+
+		if(request.getType() == MovementType.ADD)
+			product.setStockQuantity(currentStockQuantity + movementQuantity);
+		else
+			product.setStockQuantity(currentStockQuantity - movementQuantity);
+
+		productRepository.save(product);
+
+		StockMovement stockMovement = new StockMovement();
+		stockMovement.setProduct(product);
+		stockMovement.setQuantity(request.getQuantity());
+		stockMovement.setType(request.getType());
+		stockMovement.setPerformedBy(user);
+
+		stockMovementRepository.save(stockMovement);
+
+		return new StockMovementResponse(stockMovement, product.getStockQuantity());
+
+	}
+
     public ProductResponse createProduct(ProductCreateRequest request) {
         String imageUrl = null;
         MultipartFile file = request.getImage();
-
 
         if (file != null) {
             try {
@@ -67,6 +124,14 @@ class ProductServiceImplementation implements ProductService {
 
         return mapToResponse(savedProduct);
     }
+
+	public ReorderResponse flagProduct(long id, boolean flag) {
+		Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+		product.setReorderFlagged(flag);
+
+		productRepository.save(product);
+		return new ReorderResponse(product.getId(), product.isReorderFlagged());
+	}
 
     private ProductResponse mapToResponse(Product product) {
         ProductResponse response = new ProductResponse();
