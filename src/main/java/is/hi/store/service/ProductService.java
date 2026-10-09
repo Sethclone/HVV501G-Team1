@@ -130,7 +130,7 @@ class ProductServiceImplementation implements ProductService {
 		product.setReorderFlagged(flag);
 
 		productRepository.save(product);
-		return new ReorderResponse(product.getId(), flag);
+		return new ReorderResponse(product.getId(), product.isReorderFlagged());
 	}
 
     private ProductResponse mapToResponse(Product product) {
