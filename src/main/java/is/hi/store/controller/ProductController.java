@@ -1,16 +1,14 @@
 package is.hi.store.controller;
 
-import is.hi.store.dto.ProductResponse;
-import is.hi.store.dto.ReorderRequest;
-import is.hi.store.dto.StockMovementRequest;
-import is.hi.store.dto.StockMovementResponse;
+import is.hi.store.dto.*;
 import is.hi.store.service.ProductService;
 import is.hi.store.config.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
-import is.hi.store.dto.ProductCreateRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/products")
@@ -55,5 +53,10 @@ public class ProductController {
 	) {
 		ProductResponse response = productService.flagProduct(id, request.getFlagged());
 		return ResponseEntity.ok(response);
+	}
+
+	@GetMapping
+	public ResponseEntity<PagedResponse<ProductResponse>> searchProducts(@RequestParam(required = false) String category, @RequestParam(required = false) BigDecimal minPrice, @RequestParam(required = false) BigDecimal maxPrice, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size){
+		return ResponseEntity.ok(productService.searchProducts(category, minPrice, maxPrice, page, size));
 	}
 }
