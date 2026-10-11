@@ -1,6 +1,8 @@
 package is.hi.store.controller;
 
 import is.hi.store.dto.ProductResponse;
+import is.hi.store.dto.ReorderRequest;
+import is.hi.store.dto.ReorderResponse;
 import is.hi.store.dto.StockMovementRequest;
 import is.hi.store.dto.StockMovementResponse;
 import is.hi.store.service.ProductService;
@@ -39,10 +41,20 @@ public class ProductController {
 	public ResponseEntity<StockMovementResponse> stockMovement(
 		@PathVariable Long productId,
 		@RequestHeader("Authorization") String token,
-		@RequestBody StockMovementRequest request) {
+		@RequestBody StockMovementRequest request
+	) {
 
 		int userId = jwtService.extractUserId(token.substring(7));
 		StockMovementResponse response = productService.stockMovement(productId, userId, request);	
+		return ResponseEntity.ok(response);
+	}
+
+	@PatchMapping("/{id}/reorder-flag")
+	public ResponseEntity<ReorderResponse> flagProduct(
+		@PathVariable Long id,
+		@RequestBody ReorderRequest request
+	) {
+		ReorderResponse response = productService.flagProduct(id, request.getFlag());
 		return ResponseEntity.ok(response);
 	}
 }

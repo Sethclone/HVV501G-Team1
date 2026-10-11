@@ -1,6 +1,7 @@
 package is.hi.store.service;
 
 import is.hi.store.dto.ProductResponse;
+import is.hi.store.dto.ReorderResponse;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
 import is.hi.store.entity.StockMovement;
@@ -32,6 +33,7 @@ public interface ProductService {
     ProductResponse getProductById(Long id);
     ProductResponse createProduct(ProductCreateRequest request);
 	StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request);
+	ReorderResponse flagProduct(long id, boolean flag);
 }
 
 @Service
@@ -91,6 +93,7 @@ class ProductServiceImplementation implements ProductService {
 		return new StockMovementResponse(stockMovement, product.getStockQuantity());
 
 	}
+
     public ProductResponse createProduct(ProductCreateRequest request) {
         String imageUrl = null;
         MultipartFile file = request.getImage();
@@ -121,6 +124,14 @@ class ProductServiceImplementation implements ProductService {
 
         return mapToResponse(savedProduct);
     }
+
+	public ReorderResponse flagProduct(long id, boolean flag) {
+		Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+		product.setReorderFlagged(flag);
+
+		productRepository.save(product);
+		return new ReorderResponse(product.getId(), product.isReorderFlagged());
+	}
 
     private ProductResponse mapToResponse(Product product) {
         ProductResponse response = new ProductResponse();
