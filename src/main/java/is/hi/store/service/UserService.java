@@ -7,18 +7,29 @@ import is.hi.store.dto.FieldErrorDetail;
 import is.hi.store.dto.UpdateAccountRequest;
 import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.exception.InvalidRequestException;
+import is.hi.store.dto.UploadProfilePicRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 
 
 public interface UserService {
 	boolean findExistsByRole(Role role);
 	User updateOwnAccount(String email, UpdateAccountRequest request);
+	User uploadProfilePicture(String email, UploadProfilePicRequest request);
 }
 
 @Service
@@ -65,5 +76,33 @@ class UserServiceImplementation implements UserService {
 			user.setPassword(passwordEncoder.encode(request.getPassword()));
 		}
 		return userRepository.save(user);
+	}
+
+	public User uploadProfilePicture(String email, UploadProfilePicRequest request) {
+		String uploadDirectory = "uploads/";
+		User user = userRepository.findByEmail(email)
+			.orElseThrow(() -> new InvalidCredentialsException("Account no longer Exists"));
+
+		MultipartFile file = request.getImage();
+        if (file != null) {
+            try {
+                LocalDateTime now = LocalDateTime.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+                String timestamp = now.format(formatter);
+                String fileName = timestamp + "_" + file.getOriginalFilename();
+                Path filePath = Paths.get(uploadDirectory).resolve(fileName);
+
+                Files.copy(file.getInputStream(), filePath);
+                String imageUrl = "/images/" + fileName;
+
+				user.setProfilePictureURL(imageUrl);
+				userRepository.save(user);
+            } catch (IOException e) {
+				//Need to change type of exception
+                throw new RuntimeException("Uploading file failed", e);
+            }
+        }
+
+		return user;
 	}
 }

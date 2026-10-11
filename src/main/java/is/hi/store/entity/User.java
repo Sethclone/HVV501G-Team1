@@ -18,15 +18,21 @@ public class User {
 	@Enumerated(EnumType.STRING)
 	@Column(name="role")
 	private Role role;
+	@Column(name="profilePictureURL")
+	private String profilePictureURL;
 	@Column(name="createdAt")
 	private Instant createdAt;
 
-	public User() {createdAt = Instant.now();}
+	public User() {
+		createdAt = Instant.now();
+		profilePictureURL = "";
+	}
 
 	public void setUsername(String name) {this.name=name;}
 	public void setPassword(String password) {this.password = password;}
 	public void setEmail(String email) {this.email = email;}
 	public void setRole(Role role) {this.role = role;};
+	public void setProfilePictureURL(String profilePictureURL) {this.profilePictureURL = profilePictureURL;};
 
 	public String getUsername() {return name;}
 	public String getPassword() {return password;}
@@ -34,4 +40,5 @@ public class User {
 	public Role getRole() {return role;}
 	public Instant getCreatedAt() {return createdAt;}
 	public long getId() {return id;}
+	public String getProfilePictureURL() {return profilePictureURL;};
 }
