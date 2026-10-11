@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import is.hi.store.dto.ProductCreateRequest;
+import is.hi.store.dto.ProductUpdateRequest;
 import is.hi.store.dto.StockMovementRequest;
 import is.hi.store.dto.FieldErrorDetail;
 import is.hi.store.dto.StockMovementResponse;
@@ -22,6 +23,7 @@ import is.hi.store.entity.StockMovement.MovementType;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -35,6 +37,8 @@ public interface ProductService {
     ProductResponse createProduct(ProductCreateRequest request);
 	StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request);
 	ProductResponse flagProduct(long id, Boolean flag);
+    ProductResponse updateProduct(Long id, ProductUpdateRequest request);
+    void deleteProduct(Long id);
 }
 
 @Service
@@ -143,6 +147,67 @@ class ProductServiceImplementation implements ProductService {
 		product.setReorderFlagged(flag);
 		return mapToResponse(productRepository.save(product));
 	}
+
+    @Transactional
+    public ProductResponse updateProduct(Long id, ProductUpdateRequest request) {
+        Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+
+        List<FieldErrorDetail> errors = new ArrayList<>();
+        if (request != null) {
+            if (request.getName() != null) {
+                if (request.getName().isBlank()) {
+                    errors.add(new FieldErrorDetail("name", "Name must not be blank"));
+                } else if (request.getName().length() > 255) {
+                    errors.add(new FieldErrorDetail("name", "Name must be at most 255 characters"));
+                }
+            }
+            if (request.getCategory() != null) {
+                if (request.getCategory().isBlank()) {
+                    errors.add(new FieldErrorDetail("category", "Category must not be blank"));
+                } else if (request.getCategory().length() > 255) {
+                    errors.add(new FieldErrorDetail("category", "Category must be at most 255 characters"));
+                }
+            }
+            if (request.getPrice() != null) {
+                if (request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                    errors.add(new FieldErrorDetail("price", "Price must be greater than zero"));
+                }
+            }
+            if (request.getStockQuantity() != null) {
+                if (request.getStockQuantity() < 0) {
+                    errors.add(new FieldErrorDetail("stockQuantity", "Stock quantity must not be negative"));
+                }
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new InvalidRequestException(errors);
+        }
+
+        if (request != null) {
+            if (request.getName() != null) {
+                product.setName(request.getName());
+            }
+            if (request.getCategory() != null) {
+                product.setCategory(request.getCategory());
+            }
+            if (request.getPrice() != null) {
+                product.setPrice(request.getPrice());
+            }
+            if (request.getStockQuantity() != null) {
+                product.setStockQuantity(request.getStockQuantity());
+            }
+        }
+
+        Product savedProduct = productRepository.save(product);
+        return mapToResponse(savedProduct);
+    }
+
+    @Transactional
+    public void deleteProduct(Long id) {
+        Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+        productRepository.delete(product);
+    }
 
     private ProductResponse mapToResponse(Product product) {
         ProductResponse response = new ProductResponse();
