@@ -33,7 +33,7 @@ import java.util.*;
 public interface ProductService {
     ProductResponse getProductById(Long id);
     ProductResponse createProduct(ProductCreateRequest request);
-	StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request);
+	StockMovementResponse stockMovement(long productId, String userId, StockMovementRequest request);
 	ProductResponse flagProduct(long id, Boolean flag);
 }
 
@@ -61,11 +61,9 @@ class ProductServiceImplementation implements ProductService {
 
 	// Product stock change and the movement record commit together, or neither does.
 	@Transactional
-	public StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request) {
+	public StockMovementResponse stockMovement(long productId, String userId, StockMovementRequest request) {
 		Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
-		User user = userRepository.findById(userId);
-		if(user == null)
-			throw new InvalidCredentialsException("Account no longer exists");
+		User user = userRepository.findByEmail(userId).orElseThrow(() -> new InvalidCredentialsException("Account no longer exists"));
 
 		List<FieldErrorDetail> errors = new ArrayList<>();
 
