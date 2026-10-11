@@ -1,6 +1,6 @@
 package is.hi.store.service;
 
-import is.hi.store.dto.ProductResponse;
+import is.hi.store.dto.*;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
 import is.hi.store.entity.StockMovement;
@@ -10,15 +10,20 @@ import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.repository.ProductRepository;
 import is.hi.store.repository.UserRepository;
 import is.hi.store.repository.StockMovementRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+<<<<<<< HEAD
+=======
 import is.hi.store.dto.ProductCreateRequest;
 import is.hi.store.dto.ProductUpdateRequest;
 import is.hi.store.dto.StockMovementRequest;
 import is.hi.store.dto.FieldErrorDetail;
 import is.hi.store.dto.StockMovementResponse;
+>>>>>>> ac579131c60301ccfdd030eceded658651900e31
 import is.hi.store.entity.StockMovement.MovementType;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,8 +42,16 @@ public interface ProductService {
     ProductResponse createProduct(ProductCreateRequest request);
 	StockMovementResponse stockMovement(long productId, String userId, StockMovementRequest request);
 	ProductResponse flagProduct(long id, Boolean flag);
+<<<<<<< HEAD
+
+    Page<Product> search(String category, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable);
+
+    PagedResponse<ProductResponse> searchProducts(String category, BigDecimal minPrice, BigDecimal maxPrice, int page, int size);
+
+=======
     ProductResponse updateProduct(Long id, ProductUpdateRequest request);
     void deleteProduct(Long id);
+>>>>>>> ac579131c60301ccfdd030eceded658651900e31
 }
 
 @Service
@@ -146,6 +159,11 @@ class ProductServiceImplementation implements ProductService {
 		return mapToResponse(productRepository.save(product));
 	}
 
+<<<<<<< HEAD
+    @Override
+    public Page<Product> search(String category, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
+        return null;
+=======
     @Transactional
     public ProductResponse updateProduct(Long id, ProductUpdateRequest request) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
@@ -205,6 +223,7 @@ class ProductServiceImplementation implements ProductService {
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
         productRepository.delete(product);
+>>>>>>> ac579131c60301ccfdd030eceded658651900e31
     }
 
     private ProductResponse mapToResponse(Product product) {
@@ -218,5 +237,47 @@ class ProductServiceImplementation implements ProductService {
         response.setReorderFlagged(product.isReorderFlagged());
         response.setCreatedAt(product.getCreatedAt());
         return response;
+    }
+
+    public PagedResponse<ProductResponse> searchProducts(String category, BigDecimal minPrice, BigDecimal maxPrice, int page, int size){
+        List<FieldErrorDetail> errors = new ArrayList<>();
+
+        if(page < 0){
+            errors.add(new FieldErrorDetail("page", "must be 0 or greater"));
+
+        }
+        if(size < 1){
+            errors.add(new FieldErrorDetail("size", "must be at least 1"));
+
+        }
+        if(minPrice != null && minPrice.signum() < 0){
+            errors.add(new FieldErrorDetail("minPrice", "must not be negative"));
+
+        }
+        if(maxPrice != null && maxPrice.signum() < 0){
+            errors.add(new FieldErrorDetail("maxPrice", "must not be negative"));
+
+        }
+        if(minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0){
+            errors.add(new FieldErrorDetail("minPrice", "must not be greater than maxPrice"));
+
+        }
+        if(!errors.isEmpty()){
+            throw new InvalidRequestException(errors);
+
+        }
+
+        if (category != null && category.isBlank()){
+            category = null;
+
+        }
+
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Page<Product> result = productRepository.search(category, minPrice, maxPrice, pageable);
+
+        List<ProductResponse> content = result.getContent().stream().map(ProductResponse::new).toList();
+
+        return new PagedResponse<>(content, result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
+
     }
 }
