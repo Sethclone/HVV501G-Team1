@@ -8,6 +8,7 @@ import is.hi.store.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import is.hi.store.dto.ProductCreateRequest;
 import org.springframework.security.core.Authentication;
+import is.hi.store.dto.ProductUpdateRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -52,4 +53,19 @@ public class ProductController {
 		ProductResponse response = productService.flagProduct(id, request.getFlagged());
 		return ResponseEntity.ok(response);
 	}
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ProductResponse> updateProduct(
+        @PathVariable Long id,
+        @RequestBody ProductUpdateRequest request
+    ) {
+        ProductResponse response = productService.updateProduct(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
+    }
 }
