@@ -1,9 +1,9 @@
 package is.hi.store.dto;
 
 public class ReorderRequest {
-	private boolean flagged;
+	private Boolean flagged;	// boxed so a missing field is null (400), not a silent false
 
 	public ReorderRequest() {}
-	public boolean getFlag() {return flagged;}
-	public void setFlagged(boolean flagged) {this.flagged = flagged;}
+	public Boolean getFlagged() {return flagged;}
+	public void setFlagged(Boolean flagged) {this.flagged = flagged;}
 }
