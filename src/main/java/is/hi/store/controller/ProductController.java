@@ -2,7 +2,6 @@ package is.hi.store.controller;
 
 import is.hi.store.dto.ProductResponse;
 import is.hi.store.dto.ReorderRequest;
-import is.hi.store.dto.ReorderResponse;
 import is.hi.store.dto.StockMovementRequest;
 import is.hi.store.dto.StockMovementResponse;
 import is.hi.store.service.ProductService;
@@ -50,11 +49,11 @@ public class ProductController {
 	}
 
 	@PatchMapping("/{id}/reorder-flag")
-	public ResponseEntity<ReorderResponse> flagProduct(
+	public ResponseEntity<ProductResponse> flagProduct(
 		@PathVariable Long id,
 		@RequestBody ReorderRequest request
 	) {
-		ReorderResponse response = productService.flagProduct(id, request.getFlag());
+		ProductResponse response = productService.flagProduct(id, request.getFlagged());
 		return ResponseEntity.ok(response);
 	}
 }
