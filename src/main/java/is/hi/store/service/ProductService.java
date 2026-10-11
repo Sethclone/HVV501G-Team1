@@ -16,6 +16,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+<<<<<<< HEAD
+=======
+import is.hi.store.dto.ProductCreateRequest;
+import is.hi.store.dto.ProductUpdateRequest;
+import is.hi.store.dto.StockMovementRequest;
+import is.hi.store.dto.FieldErrorDetail;
+import is.hi.store.dto.StockMovementResponse;
+>>>>>>> ac579131c60301ccfdd030eceded658651900e31
 import is.hi.store.entity.StockMovement.MovementType;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,13 +40,18 @@ import java.util.*;
 public interface ProductService {
     ProductResponse getProductById(Long id);
     ProductResponse createProduct(ProductCreateRequest request);
-	StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request);
+	StockMovementResponse stockMovement(long productId, String userId, StockMovementRequest request);
 	ProductResponse flagProduct(long id, Boolean flag);
+<<<<<<< HEAD
 
     Page<Product> search(String category, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable);
 
     PagedResponse<ProductResponse> searchProducts(String category, BigDecimal minPrice, BigDecimal maxPrice, int page, int size);
 
+=======
+    ProductResponse updateProduct(Long id, ProductUpdateRequest request);
+    void deleteProduct(Long id);
+>>>>>>> ac579131c60301ccfdd030eceded658651900e31
 }
 
 @Service
@@ -65,11 +78,9 @@ class ProductServiceImplementation implements ProductService {
 
 	// Product stock change and the movement record commit together, or neither does.
 	@Transactional
-	public StockMovementResponse stockMovement(long productId, long userId, StockMovementRequest request) {
+	public StockMovementResponse stockMovement(long productId, String userId, StockMovementRequest request) {
 		Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
-		User user = userRepository.findById(userId);
-		if(user == null)
-			throw new InvalidCredentialsException("Account no longer exists");
+		User user = userRepository.findByEmail(userId).orElseThrow(() -> new InvalidCredentialsException("Account no longer exists"));
 
 		List<FieldErrorDetail> errors = new ArrayList<>();
 
@@ -148,9 +159,71 @@ class ProductServiceImplementation implements ProductService {
 		return mapToResponse(productRepository.save(product));
 	}
 
+<<<<<<< HEAD
     @Override
     public Page<Product> search(String category, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
         return null;
+=======
+    @Transactional
+    public ProductResponse updateProduct(Long id, ProductUpdateRequest request) {
+        Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+
+        List<FieldErrorDetail> errors = new ArrayList<>();
+        if (request != null) {
+            if (request.getName() != null) {
+                if (request.getName().isBlank()) {
+                    errors.add(new FieldErrorDetail("name", "Name must not be blank"));
+                } else if (request.getName().length() > 255) {
+                    errors.add(new FieldErrorDetail("name", "Name must be at most 255 characters"));
+                }
+            }
+            if (request.getCategory() != null) {
+                if (request.getCategory().isBlank()) {
+                    errors.add(new FieldErrorDetail("category", "Category must not be blank"));
+                } else if (request.getCategory().length() > 255) {
+                    errors.add(new FieldErrorDetail("category", "Category must be at most 255 characters"));
+                }
+            }
+            if (request.getPrice() != null) {
+                if (request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                    errors.add(new FieldErrorDetail("price", "Price must be greater than zero"));
+                }
+            }
+            if (request.getStockQuantity() != null) {
+                if (request.getStockQuantity() < 0) {
+                    errors.add(new FieldErrorDetail("stockQuantity", "Stock quantity must not be negative"));
+                }
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new InvalidRequestException(errors);
+        }
+
+        if (request != null) {
+            if (request.getName() != null) {
+                product.setName(request.getName());
+            }
+            if (request.getCategory() != null) {
+                product.setCategory(request.getCategory());
+            }
+            if (request.getPrice() != null) {
+                product.setPrice(request.getPrice());
+            }
+            if (request.getStockQuantity() != null) {
+                product.setStockQuantity(request.getStockQuantity());
+            }
+        }
+
+        Product savedProduct = productRepository.save(product);
+        return mapToResponse(savedProduct);
+    }
+
+    @Transactional
+    public void deleteProduct(Long id) {
+        Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+        productRepository.delete(product);
+>>>>>>> ac579131c60301ccfdd030eceded658651900e31
     }
 
     private ProductResponse mapToResponse(Product product) {

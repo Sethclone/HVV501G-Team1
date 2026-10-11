@@ -2,8 +2,13 @@ package is.hi.store.controller;
 
 import is.hi.store.dto.*;
 import is.hi.store.service.ProductService;
-import is.hi.store.config.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
+<<<<<<< HEAD
+=======
+import is.hi.store.dto.ProductCreateRequest;
+import org.springframework.security.core.Authentication;
+import is.hi.store.dto.ProductUpdateRequest;
+>>>>>>> ac579131c60301ccfdd030eceded658651900e31
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,11 +19,9 @@ import java.math.BigDecimal;
 @RequestMapping("/api/products")
 public class ProductController {
     private final ProductService productService;
-	private final JwtService jwtService;
 
-    public ProductController(ProductService productService, JwtService jwtService) {
+    public ProductController(ProductService productService) {
         this.productService = productService;
-		this.jwtService = jwtService;
     }
 
     @GetMapping("/{id}")
@@ -36,13 +39,11 @@ public class ProductController {
 
 	@PostMapping("/{productId}/stock-movements")
 	public ResponseEntity<StockMovementResponse> stockMovement(
+		Authentication auth,
 		@PathVariable Long productId,
-		@RequestHeader("Authorization") String token,
 		@RequestBody StockMovementRequest request
 	) {
-
-		int userId = jwtService.extractUserId(token.substring(7));
-		StockMovementResponse response = productService.stockMovement(productId, userId, request);	
+		StockMovementResponse response = productService.stockMovement(productId, auth.getName(), request);	
 		return ResponseEntity.ok(response);
 	}
 
@@ -55,8 +56,25 @@ public class ProductController {
 		return ResponseEntity.ok(response);
 	}
 
+<<<<<<< HEAD
 	@GetMapping
 	public ResponseEntity<PagedResponse<ProductResponse>> searchProducts(@RequestParam(required = false) String category, @RequestParam(required = false) BigDecimal minPrice, @RequestParam(required = false) BigDecimal maxPrice, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size){
 		return ResponseEntity.ok(productService.searchProducts(category, minPrice, maxPrice, page, size));
 	}
+=======
+    @PatchMapping("/{id}")
+    public ResponseEntity<ProductResponse> updateProduct(
+        @PathVariable Long id,
+        @RequestBody ProductUpdateRequest request
+    ) {
+        ProductResponse response = productService.updateProduct(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
+    }
+>>>>>>> ac579131c60301ccfdd030eceded658651900e31
 }
