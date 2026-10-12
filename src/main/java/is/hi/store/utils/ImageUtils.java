@@ -3,6 +3,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.apache.tika.Tika;
 import is.hi.store.dto.FieldErrorDetail;
 import is.hi.store.exception.InvalidRequestException;
+import is.hi.store.entity.Image;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Paths;
@@ -20,7 +21,7 @@ public class ImageUtils {
 	private static final List<String> allowedImageTypes = List.of("image/png");
 	private static final long maxFileSize = 10*1024*1024;
 
-	public static String upload(MultipartFile file) throws IOException{
+	private static void validateUpload(MultipartFile file) throws IOException {
 		Tika tika = new Tika();
 		String detectedFileType = tika.detect(file.getBytes());
 		List<FieldErrorDetail> errors = new ArrayList<>();
@@ -37,7 +38,11 @@ public class ImageUtils {
 
 		if(!errors.isEmpty())
 			throw new InvalidRequestException(errors);
-		
+	}
+
+	public static String upload(MultipartFile file) throws IOException{
+		validateUpload(file);
+
 		LocalDateTime now = LocalDateTime.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 		String timestamp = now.format(formatter);
@@ -48,5 +53,22 @@ public class ImageUtils {
 		String imageUrl = "/images/" + fileName;
 
 		return imageUrl;
+	}
+
+	public static Image uploadToDatabase(MultipartFile file) throws IOException{	
+		validateUpload(file);
+		
+		LocalDateTime now = LocalDateTime.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+		String timestamp = now.format(formatter);
+		String fileName = timestamp + "_" + file.getOriginalFilename();
+
+		String imageUrl = fileName;
+
+		Image image = new Image();
+		image.setSlug(imageUrl);
+		image.setImage(file.getBytes());
+
+		return image;
 	}
 }

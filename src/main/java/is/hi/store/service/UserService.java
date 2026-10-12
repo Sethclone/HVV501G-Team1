@@ -1,7 +1,9 @@
 package is.hi.store.service;
 
 import is.hi.store.repository.UserRepository;
+import is.hi.store.repository.ImageRepository;
 import is.hi.store.entity.User;
+import is.hi.store.entity.Image;
 import is.hi.store.entity.User.Role;
 import is.hi.store.dto.FieldErrorDetail;
 import is.hi.store.dto.UpdateAccountRequest;
@@ -13,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -36,6 +39,8 @@ public interface UserService {
 class UserServiceImplementation implements UserService {
 	@Autowired
 	private UserRepository userRepository;
+	@Autowired
+	private ImageRepository imageRepository;
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
@@ -77,15 +82,27 @@ class UserServiceImplementation implements UserService {
 		}
 		return userRepository.save(user);
 	}
-
+	
+	//Edge Case: Image gets uploaded sucessfully but user entity fails to update.
+	//Method 2 makes it easier to deal with this.
+	//@Transactional
 	public User uploadProfilePicture(String email, UploadProfilePicRequest request) {
 		User user = userRepository.findByEmail(email)
 			.orElseThrow(() -> new InvalidCredentialsException("Account no longer Exists"));
 
 		MultipartFile file = request.getImage();
 		String imageUrl = "";
+
 		try {
+			//method 1:
 			imageUrl = ImageUtils.upload(file);
+			//method 2:
+			/*	
+			Image image = ImageUtils.uploadToDatabase(file);
+			imageRepository.save(image);
+			imageUrl = image.getSlug();
+			*/
+			
 		} catch (IOException e) {
 			throw new RuntimeException("Uploading file failed", e);
 		}
