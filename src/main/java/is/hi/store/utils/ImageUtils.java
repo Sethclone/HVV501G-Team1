@@ -17,6 +17,8 @@ import java.util.*;
 
 
 public class ImageUtils {
+	//These are not final, can be changed later
+	//I think maxFileSize can be specified in application.properties, maybe that would be better?
 	private static final String uploadDirectory = "uploads/";
 	private static final List<String> allowedImageTypes = List.of("image/png");
 	private static final long maxFileSize = 10*1024*1024;
