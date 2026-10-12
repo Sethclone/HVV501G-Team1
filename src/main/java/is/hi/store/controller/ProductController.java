@@ -1,26 +1,22 @@
 package is.hi.store.controller;
 
-import is.hi.store.dto.ProductResponse;
-import is.hi.store.dto.ReorderRequest;
-import is.hi.store.dto.StockMovementRequest;
-import is.hi.store.dto.StockMovementResponse;
+import is.hi.store.dto.*;
 import is.hi.store.service.ProductService;
-import is.hi.store.config.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
-import is.hi.store.dto.ProductCreateRequest;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
     private final ProductService productService;
-	private final JwtService jwtService;
 
-    public ProductController(ProductService productService, JwtService jwtService) {
+    public ProductController(ProductService productService) {
         this.productService = productService;
-		this.jwtService = jwtService;
     }
 
     @GetMapping("/{id}")
@@ -38,13 +34,11 @@ public class ProductController {
 
 	@PostMapping("/{productId}/stock-movements")
 	public ResponseEntity<StockMovementResponse> stockMovement(
+		Authentication auth,
 		@PathVariable Long productId,
-		@RequestHeader("Authorization") String token,
 		@RequestBody StockMovementRequest request
 	) {
-
-		int userId = jwtService.extractUserId(token.substring(7));
-		StockMovementResponse response = productService.stockMovement(productId, userId, request);	
+		StockMovementResponse response = productService.stockMovement(productId, auth.getName(), request);	
 		return ResponseEntity.ok(response);
 	}
 
@@ -56,4 +50,24 @@ public class ProductController {
 		ProductResponse response = productService.flagProduct(id, request.getFlagged());
 		return ResponseEntity.ok(response);
 	}
+
+	@GetMapping
+	public ResponseEntity<PagedResponse<ProductResponse>> searchProducts(@RequestParam(required = false) String category, @RequestParam(required = false) BigDecimal minPrice, @RequestParam(required = false) BigDecimal maxPrice, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size){
+		return ResponseEntity.ok(productService.searchProducts(category, minPrice, maxPrice, page, size));
+	}
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ProductResponse> updateProduct(
+        @PathVariable Long id,
+        @RequestBody ProductUpdateRequest request
+    ) {
+        ProductResponse response = productService.updateProduct(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
+    }
 }

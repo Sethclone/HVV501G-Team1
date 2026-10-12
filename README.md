@@ -26,26 +26,25 @@ Use cases are described in [docs/Verkefni1.md](docs/Verkefni1.md). Sprint plans 
 | UC8 | View product by id | `GET /api/products/{id}` | Done |
 | UC16 | Create admin account (admin only) | `POST /api/admin/users` | Done |
 
-## Sprint 2
+## Sprint 2 (done)
 
 | UC | Feature | Endpoint | Status |
 |---|---|---|---|
 | UC1 | Record stock movement (add/remove) | `POST /api/products/{id}/stock-movements` | Done |
+| UC3 | Search and filter products, paginated | `GET /api/products?category=&minPrice=&maxPrice=&page=&size=` | Done |
 | UC6 | Manage own account (name, password) | `PUT /api/users/me` | Done |
+| UC10 | Update or remove product | `PATCH` / `DELETE /api/products/{id}` | Done |
 | UC9 | Flag product for reorder (stretch goal) | `PATCH /api/products/{id}/reorder-flag` | Done |
-| UC3 | Search and filter products, paginated | `GET /api/products?category=&minPrice=&maxPrice=&page=&size=` | Not started |
-| UC10 | Update or remove product | `PATCH` / `DELETE /api/products/{id}` | Not started |
-| UC20 | Upload profile picture (stretch goal) | `POST /api/users/me/profile-picture` | Not started |
+| UC20 | Upload profile picture (stretch goal) | `POST /api/users/me/profile-picture` | Done (minimal) |
 
 UC1, UC6 and UC9 went through a review and fix round and have integration tests
-(`ProductControllerTests`, `UserControllerTests`).
+(`ProductControllerTests`, `UserControllerTests`). UC3, UC10 and UC20 don't have tests yet.
 
 ## Exceptions and known issues
 
 | Item | Notes |
 |---|---|
-| UC3, UC10 | Not started this sprint, might have to be carried over. |
 | UC6 email | Users can't change their own email. It's a work email set by an admin (decision #5 in the Sprint 2 contracts). |
-| UC2 image limits | Allowed image formats and max size are still undecided (Sprint 1 decision #2). |
+| Image limits (UC2, UC20) | Allowed image formats and max size are still undecided (Sprint 1 decision #2), so no limits are enforced. |
 | Error status codes | Some Spring level errors (e.g. a non-numeric id in the URL) return `401` instead of `400`, because `/error` isn't permitted in the security config. |
 | Stock concurrency | Two stock removals at the exact same moment could both pass the stock check. No row locking yet. |
