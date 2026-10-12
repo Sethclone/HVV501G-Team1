@@ -42,7 +42,7 @@ until your primary task is done and pushed.
 
 | # | Question | Decision | Status |
 |---|----------|----------|--------|
-| 1 | Pagination defaults (UC3) | `page=0, size=20`, max `size=100` | Proposed |
+| 1 | Pagination defaults (UC3) | `page=0, size=20`, max `size=100` (larger sizes are capped to 100, not rejected) | Confirmed |
 | 2 | Stock movement below zero | Reject with `400` if a `REMOVE` would take stock below 0 (per UC1 extension 2a in `Verkefni1.md`) | Confirmed |
 | 3 | ~~UC6 email change collision~~ | Dropped - see #5, users can't change their own email, so there's nothing to collide | Dropped |
 | 4 | UC6 role field | `UpdateAccountRequest` never has a role field - a user can never self-promote via this endpoint, same reasoning as UC4's admin-only registration | Confirmed |
@@ -137,3 +137,19 @@ For `400`s: there's no validation starter, so validate manually and throw
 All four branch off the latest `dev` (or `main`, whichever is current) independently - no
 cross-dependencies between them this time, unlike Sprint 1's entity-first ordering. Merge
 in any order as each is ready.
+
+---
+
+## 7. Status (end of sprint)
+
+| Task | Use Case | Status | Notes |
+|---|---|---|---|
+| A | UC1 Stock movement | Done | Review fixes in #12, covered by `ProductControllerTests` |
+| B | UC10 Update/remove product | Done | No tests yet |
+| C | UC3 Search/filter | Done | No tests yet |
+| D | UC6 Manage own account | Done | Covered by `UserControllerTests` |
+| E (stretch) | UC9 Flag for reorder | Done | Returns `ProductResponse`, covered by `ProductControllerTests` |
+| F (stretch) | UC20 Profile picture | Done (minimal) | Sprint 1 decision #2 (image format/size limits) is still open, so no limits are enforced |
+
+PR #15 (UC3) was merged with unresolved conflict markers against UC10, which broke the `dev`
+build. Fixed on `fix/dev-merge-markers` by keeping both sides.

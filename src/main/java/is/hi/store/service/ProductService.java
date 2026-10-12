@@ -16,14 +16,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-<<<<<<< HEAD
-=======
-import is.hi.store.dto.ProductCreateRequest;
-import is.hi.store.dto.ProductUpdateRequest;
-import is.hi.store.dto.StockMovementRequest;
-import is.hi.store.dto.FieldErrorDetail;
-import is.hi.store.dto.StockMovementResponse;
->>>>>>> ac579131c60301ccfdd030eceded658651900e31
 import is.hi.store.entity.StockMovement.MovementType;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,16 +34,9 @@ public interface ProductService {
     ProductResponse createProduct(ProductCreateRequest request);
 	StockMovementResponse stockMovement(long productId, String userId, StockMovementRequest request);
 	ProductResponse flagProduct(long id, Boolean flag);
-<<<<<<< HEAD
-
-    Page<Product> search(String category, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable);
-
     PagedResponse<ProductResponse> searchProducts(String category, BigDecimal minPrice, BigDecimal maxPrice, int page, int size);
-
-=======
     ProductResponse updateProduct(Long id, ProductUpdateRequest request);
     void deleteProduct(Long id);
->>>>>>> ac579131c60301ccfdd030eceded658651900e31
 }
 
 @Service
@@ -159,11 +144,6 @@ class ProductServiceImplementation implements ProductService {
 		return mapToResponse(productRepository.save(product));
 	}
 
-<<<<<<< HEAD
-    @Override
-    public Page<Product> search(String category, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
-        return null;
-=======
     @Transactional
     public ProductResponse updateProduct(Long id, ProductUpdateRequest request) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
@@ -223,7 +203,6 @@ class ProductServiceImplementation implements ProductService {
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
         productRepository.delete(product);
->>>>>>> ac579131c60301ccfdd030eceded658651900e31
     }
 
     private ProductResponse mapToResponse(Product product) {
