@@ -25,10 +25,4 @@ public class ImageController {
 		byte[] image = imageService.getImageBySlug(slug);
 		return new ResponseEntity<byte[]>(image, HttpStatus.OK);
 	}
-
-    @PostMapping("/upload")
-    public ResponseEntity<ProductResponse> getProductById(@ModelAttribute ImageUploadRequest request) {	
-        imageService.upload(request.getImage());
-        return ResponseEntity.noContent().build();
-    }
 }

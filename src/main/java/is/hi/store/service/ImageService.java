@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.io.InputStream;
 
 public interface ImageService {
-	void upload(MultipartFile file);
 	byte[] getImageBySlug(String slug);
 }
 
@@ -24,17 +23,5 @@ class ImageServiceImplementation implements ImageService {
 		Image image = imageRepository.findBySlug(slug).orElseThrow(() -> new ProductNotFoundException(new Long(1)));
 		byte[] data = image.getImage();
 		return data;
-	}
-
-	public void upload(MultipartFile file) {
-		try {
-			Image image = new Image();
-			image.setSlug("test");
-			image.setImage(file.getBytes());
-
-			imageRepository.save(image);
-		} catch(Exception e) {
-			System.out.println(e.getMessage());
-		}
 	}
 }
