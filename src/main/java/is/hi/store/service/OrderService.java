@@ -12,6 +12,7 @@ import is.hi.store.entity.OrderItem;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
 import is.hi.store.exception.OrderNotFoundException;
+import is.hi.store.exception.ResourceNotFoundException;
 import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.exception.ProductNotFoundException;
@@ -132,14 +133,27 @@ class OrderServiceImplementation implements OrderService {
 
         Order savedOrder = orderRepository.save(order);
         return mapToResponse(savedOrder);
-    }
+    } 
 
 	public void removeItem(Long orderId, Long itemId) {
-		Order order = orderRepository.getById(orderId);
-		List<OrderItem> items = order.getItems();
+		List<FieldErrorDetail> errors = new ArrayList<FieldErrorDetail>();
 
-		items.removeIf(item -> item.getId() == itemId);
-		order.setItems(items);
+		Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
+		if(order.getStatus() != OrderStatus.PENDING)
+			errors.add(new FieldErrorDetail("status", "Must be PENDING"));
+
+		boolean isFound =
+		order
+		.getItems()
+		.removeIf(item -> item.getId() == itemId);
+
+		if(!isFound)
+			//errors.add(new FieldErrorDetail("itemId", "Order does not contain item: " + itemId));
+			throw new ResourceNotFoundException("Order Item", itemId);
+
+		if(!errors.isEmpty())
+            throw new InvalidRequestException(errors);
+			
 		orderRepository.save(order);
 	}
 
