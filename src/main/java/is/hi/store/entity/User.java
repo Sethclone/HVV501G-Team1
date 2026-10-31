@@ -22,6 +22,8 @@ public class User {
 	private String profilePictureURL;
 	@Column(name="createdAt")
 	private Instant createdAt;
+	@Column(name="mustChangePassword")
+	private boolean mustChangePassword;	// set by an admin password reset (UC7), cleared when the user changes it (UC6)
 
 	public User() {
 		createdAt = Instant.now();
@@ -41,4 +43,6 @@ public class User {
 	public Instant getCreatedAt() {return createdAt;}
 	public long getId() {return id;}
 	public String getProfilePictureURL() {return profilePictureURL;};
+	public boolean isMustChangePassword() {return mustChangePassword;}
+	public void setMustChangePassword(boolean mustChangePassword) {this.mustChangePassword = mustChangePassword;}
 }
