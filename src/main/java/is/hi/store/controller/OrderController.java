@@ -30,12 +30,12 @@ public class OrderController {
     }
 
 	@DeleteMapping("/{orderId}/items/{itemId}")
-	public ResponseEntity<Void> removeItem(
+	public ResponseEntity<OrderResponse> removeItem(
 		@PathVariable Long orderId,
 		@PathVariable Long itemId
 	) {
-		orderService.removeItem(orderId, itemId);
-		return ResponseEntity.noContent().build();
+		OrderResponse response = orderService.removeItem(orderId, itemId);
+		return ResponseEntity.ok(response);
 	}
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long id) {

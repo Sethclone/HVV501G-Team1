@@ -31,10 +31,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Iterator;
 
 public interface OrderService {
     OrderResponse createOrder(String email, CreateOrderRequest request);
-	void removeItem(Long orderId, Long itemId);
+	OrderResponse removeItem(Long orderId, Long itemId);
     OrderResponse getOrderById(Long id);
     PagedResponse<OrderResponse> getOrders(String status, int page, int size);
 }
@@ -135,26 +136,43 @@ class OrderServiceImplementation implements OrderService {
         return mapToResponse(savedOrder);
     } 
 
-	public void removeItem(Long orderId, Long itemId) {
+	@Transactional
+	public OrderResponse removeItem(Long orderId, Long itemId) {
 		List<FieldErrorDetail> errors = new ArrayList<FieldErrorDetail>();
-
 		Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
-		if(order.getStatus() != OrderStatus.PENDING)
-			errors.add(new FieldErrorDetail("status", "Must be PENDING"));
-
-		boolean isFound =
+		Iterator<OrderItem> iter = 
 		order
 		.getItems()
-		.removeIf(item -> item.getId() == itemId);
-
-		if(!isFound)
+		.stream()
+		.filter(item -> item.getId().equals(itemId))
+		.iterator();
+		if(!iter.hasNext())
 			//errors.add(new FieldErrorDetail("itemId", "Order does not contain item: " + itemId));
 			throw new ResourceNotFoundException("Order Item", itemId);
 
+		OrderItem item = iter.next();
+		Product product = item.getProduct();
+
+		if(order.getStatus() != OrderStatus.PENDING)
+			errors.add(new FieldErrorDetail("status", "Must be PENDING"));
+
 		if(!errors.isEmpty())
             throw new InvalidRequestException(errors);
-			
+
+		product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+		order.getItems().remove(item);
+		order.setTotalPrice(
+			order.getTotalPrice()
+			.subtract(
+			item.getUnitPrice()
+			.multiply(
+			BigDecimal.valueOf(item.getQuantity())
+			)));
+
+		productRepository.save(product);
 		orderRepository.save(order);
+
+		return new OrderResponse(order);
 	}
 
     private OrderResponse mapToResponse(Order order) {
