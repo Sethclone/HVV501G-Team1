@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Iterator;
 
 public interface OrderService {
     OrderResponse createOrder(String email, CreateOrderRequest request);
@@ -141,10 +140,10 @@ class OrderServiceImplementation implements OrderService {
 		List<FieldErrorDetail> errors = new ArrayList<FieldErrorDetail>();
 		Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
 
-		if(order.getStatus() != OrderStatus.PENDING)
+		if(order.getStatus() != OrderStatus.PENDING) {
 			errors.add(new FieldErrorDetail("status", "Must be PENDING"));
-		if(!errors.isEmpty())
-            throw new InvalidRequestException(errors);
+			throw new InvalidRequestException(errors);
+		}
 
 		OrderItem item = 
 		order
