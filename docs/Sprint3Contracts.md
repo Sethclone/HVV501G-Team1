@@ -36,11 +36,11 @@ Once primary tasks are completed and merged:
 
 | # | Question | Decision | Status |
 |---|----------|----------|--------|
-| 1 | Order status lifecycle | Enum `OrderStatus { PENDING, CONFIRMED, SHIPPED, CANCELLED }`. New orders start as `PENDING`. | Proposed |
-| 2 | Stock deduction timing | UC11 deducts product stock immediately upon order creation. If any item's requested quantity exceeds available `stockQuantity`, reject the whole order with `400 Bad Request` (no partial order creation). | Confirmed |
-| 3 | Stock restoration on item removal | Removing an item via UC18 restores that item's quantity back to `Product.stockQuantity`. Deleting an item is only allowed if the order is `PENDING`. | Confirmed |
+| 1 | Order status lifecycle | Enum `OrderStatus { PENDING, CONFIRMED, SHIPPED, CANCELLED }`. New orders start as `PENDING`. | Confirmed |
+| 2 | Stock deduction timing | UC11 deducts `Product.stockQuantity` directly upon order creation (`StockMovement` is only for manual UC1 adjustments; the order itself records the actor, timestamp, and quantities). If any item's requested quantity exceeds available `stockQuantity`, reject the whole order with `400 Bad Request` (no partial order creation). | Confirmed |
+| 3 | Stock restoration on item removal | Removing an item via UC18 restores that item's quantity back to `Product.stockQuantity` and recalculates `Order.totalPrice`. Deleting an item is only allowed if the order is `PENDING`. | Confirmed |
 | 4 | Order pagination | Reuses `PagedResponse<T>` from Sprint 2 (`page=0, size=20, max=100`). | Confirmed |
-| 5 | UC7 authorization | Only users with `ROLE_ADMIN` can access `/api/admin/users/**`. Admins can update a user's role (`STAFF`/`ADMIN`) and name. Email remains unique. | Confirmed |
+| 5 | UC7 authorization & editable fields | Only users with `ROLE_ADMIN` can access `/api/admin/users/**`. Admins can update a user's `name` and `role` (`STAFF`/`ADMIN`), returning `UserSummary`. | Confirmed |
 | 6 | Price snapshotting | `OrderItem` records the unit price at the time of purchase (`unitPrice`), shielding past orders from future product price changes. | Confirmed |
 
 ---
@@ -49,21 +49,25 @@ Once primary tasks are completed and merged:
 
 ### `Order` (owner: Task A)
 
+Table name: `@Table(name = "orders")` (`order` is a reserved SQL keyword in H2).
+
 | Field | Type | Notes |
 |---|---|---|
 | id | Long | PK, generated |
-| user | `User` (ManyToOne) | The staff member / agent who created the order |
+| user | `User` (ManyToOne) | The staff member / agent who created the order (`@JoinColumn(name = "user_id")`) |
 | status | `OrderStatus` enum | `PENDING`, `CONFIRMED`, `SHIPPED`, `CANCELLED` |
 | totalPrice | BigDecimal | Computed total of all line items |
 | items | `List<OrderItem>` (OneToMany) | `mappedBy = "order"`, `cascade = CascadeType.ALL`, `orphanRemoval = true` |
 | createdAt | Instant | Set on creation (`Instant.now()`) |
 
 ```java
-enum OrderStatus { PENDING, CONFIRMED, SHIPPED, CANCELLED }
+public enum OrderStatus { PENDING, CONFIRMED, SHIPPED, CANCELLED }
 ```
 Remember `@Enumerated(EnumType.STRING)` on `status`.
 
 ### `OrderItem` (owner: Task A)
+
+Table name: `@Table(name = "order_items")`.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -84,7 +88,7 @@ CreateOrderRequest     { items: List<OrderItemRequest> }
 OrderItemResponse      { id: Long, productId: Long, productName: String, quantity: Integer, unitPrice: BigDecimal, subtotal: BigDecimal }
 OrderResponse          { id: Long, userId: Long, status: OrderStatus, totalPrice: BigDecimal, createdAt: Instant, items: List<OrderItemResponse> }
 
-AdminUpdateUserRequest { name?: String, role?: Role }
+AdminUpdateUserRequest { name?: String, role?: Role }   // PATCH/PUT semantics, responds with UserSummary
 ```
 
 Reuse existing:
@@ -105,11 +109,13 @@ Reuse existing:
 | PUT | `/api/admin/users/{id}` | UC7 | ADMIN only | Task C (Unnar) |
 | PUT | `/api/orders/{id}` | UC14 | Authenticated staff | Task E (Stretch) |
 
-### Error handling & Validation rules
+### Response codes & Validation rules
+- `201 Created` - create order (`POST /api/orders`, returns `OrderResponse`)
+- `200 OK` - get order(s), remove item from order (returns updated `OrderResponse`), admin update user (returns `UserSummary`), modify order (returns `OrderResponse`)
 - Continue using the standard manual validation pattern: throw `InvalidRequestException(List<FieldErrorDetail>)` to return `400 Bad Request` with `fieldErrors`.
-- Throw 404 (`OrderNotFoundException`, `ProductNotFoundException`) when referenced IDs do not exist.
+- Throw `404 Not Found` (`OrderNotFoundException`, `ProductNotFoundException`) when referenced IDs do not exist.
 - UC11: Reject with `400` if `items` is empty, if any `quantity <= 0`, or if any item's quantity exceeds current `stockQuantity`.
-- UC18: Reject with `400` if the order is already `CONFIRMED` or `SHIPPED`. Return `204 No Content` or updated `OrderResponse`.
+- UC18: Reject with `400` if the order is not `PENDING` (e.g., already `CONFIRMED`, `SHIPPED`, or `CANCELLED`). Return `200 OK` with the updated `OrderResponse`.
 
 ---
 
