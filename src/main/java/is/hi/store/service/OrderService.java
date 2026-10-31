@@ -140,34 +140,30 @@ class OrderServiceImplementation implements OrderService {
 	public OrderResponse removeItem(Long orderId, Long itemId) {
 		List<FieldErrorDetail> errors = new ArrayList<FieldErrorDetail>();
 		Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
-		Iterator<OrderItem> iter = 
-		order
-		.getItems()
-		.stream()
-		.filter(item -> item.getId().equals(itemId))
-		.iterator();
-		if(!iter.hasNext())
-			//errors.add(new FieldErrorDetail("itemId", "Order does not contain item: " + itemId));
-			throw new ResourceNotFoundException("Order Item", itemId);
-
-		OrderItem item = iter.next();
-		Product product = item.getProduct();
 
 		if(order.getStatus() != OrderStatus.PENDING)
 			errors.add(new FieldErrorDetail("status", "Must be PENDING"));
-
 		if(!errors.isEmpty())
             throw new InvalidRequestException(errors);
+
+		OrderItem item = 
+		order
+		.getItems()
+		.stream()
+		.filter(i -> i.getId().equals(itemId))
+		.findFirst()
+		.orElseThrow(() -> new ResourceNotFoundException("Order Item", itemId));
+
+		Product product = item.getProduct();
 
 		product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
 		order.getItems().remove(item);
 		order.setTotalPrice(
-			order.getTotalPrice()
-			.subtract(
-			item.getUnitPrice()
-			.multiply(
-			BigDecimal.valueOf(item.getQuantity())
-			)));
+			order.getItems()
+			.stream()
+			.map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
+			.reduce(BigDecimal.ZERO, (a,b) -> a.add(b))
+			);
 
 		productRepository.save(product);
 		orderRepository.save(order);
