@@ -5,11 +5,13 @@ import is.hi.store.dto.FieldErrorDetail;
 import is.hi.store.dto.OrderItemRequest;
 import is.hi.store.dto.OrderItemResponse;
 import is.hi.store.dto.OrderResponse;
+import is.hi.store.dto.PagedResponse;
 import is.hi.store.entity.Order;
 import is.hi.store.entity.Order.OrderStatus;
 import is.hi.store.entity.OrderItem;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
+import is.hi.store.exception.OrderNotFoundException;
 import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.exception.ProductNotFoundException;
@@ -18,6 +20,10 @@ import is.hi.store.repository.ProductRepository;
 import is.hi.store.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -27,6 +33,8 @@ import java.util.Map;
 
 public interface OrderService {
     OrderResponse createOrder(String email, CreateOrderRequest request);
+    OrderResponse getOrderById(Long id);
+    PagedResponse<OrderResponse> getOrders(String status, int page, int size);
 }
 
 @Service
@@ -147,5 +155,50 @@ class OrderServiceImplementation implements OrderService {
         response.setItems(itemResponses);
 
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(Long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new OrderNotFoundException(id));
+        return mapToResponse(order);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<OrderResponse> getOrders(String status, int page, int size) {
+        List<FieldErrorDetail> errors = new ArrayList<>();
+
+        if (page < 0) {
+            errors.add(new FieldErrorDetail("page", "must be 0 or greater"));
+        }
+        if (size < 1) {
+            errors.add(new FieldErrorDetail("size", "must be at least 1"));
+        }
+
+        OrderStatus statusFilter = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                statusFilter = OrderStatus.valueOf(status.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                errors.add(new FieldErrorDetail("status",
+                        "must be one of PENDING, CONFIRMED, SHIPPED, CANCELLED"));
+            }
+        }
+        if (!errors.isEmpty()) {
+            throw new InvalidRequestException(errors);
+        }
+
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Order> result = (statusFilter == null)
+                ? orderRepository.findAll(pageable)
+                : orderRepository.findByStatus(statusFilter, pageable);
+
+        List<OrderResponse> content = result.getContent().stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        return new PagedResponse<>(content, result.getNumber(), result.getSize(),
+                result.getTotalElements(), result.getTotalPages());
     }
 }

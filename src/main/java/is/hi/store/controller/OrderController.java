@@ -2,6 +2,7 @@ package is.hi.store.controller;
 
 import is.hi.store.dto.CreateOrderRequest;
 import is.hi.store.dto.OrderResponse;
+import is.hi.store.dto.PagedResponse;
 import is.hi.store.service.OrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,5 +27,18 @@ public class OrderController {
         OrderResponse response = orderService.createOrder(auth.getName(), request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long id) {
+        return ResponseEntity.ok(orderService.getOrderById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<PagedResponse<OrderResponse>> getOrders(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(orderService.getOrders(status, page, size));
     }
 }
