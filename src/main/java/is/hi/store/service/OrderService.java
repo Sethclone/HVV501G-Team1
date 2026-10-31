@@ -27,6 +27,7 @@ import java.util.Map;
 
 public interface OrderService {
     OrderResponse createOrder(String email, CreateOrderRequest request);
+	void removeItem(Long orderId, Long itemId);
 }
 
 @Service
@@ -124,6 +125,15 @@ class OrderServiceImplementation implements OrderService {
         Order savedOrder = orderRepository.save(order);
         return mapToResponse(savedOrder);
     }
+
+	public void removeItem(Long orderId, Long itemId) {
+		Order order = orderRepository.getById(orderId);
+		List<OrderItem> items = order.getItems();
+
+		items.removeIf(item -> item.getId() == itemId);
+		order.setItems(items);
+		orderRepository.save(order);
+	}
 
     private OrderResponse mapToResponse(Order order) {
         OrderResponse response = new OrderResponse();

@@ -27,4 +27,13 @@ public class OrderController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+	@DeleteMapping("/{orderId}/items/{itemId}")
+	public ResponseEntity<Void> removeItem(
+		@PathVariable Long orderId,
+		@PathVariable Long itemId
+	) {
+		orderService.removeItem(orderId, itemId);
+		return ResponseEntity.noContent().build();
+	}
 }
