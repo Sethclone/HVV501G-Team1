@@ -5,12 +5,17 @@ import is.hi.store.entity.User;
 import is.hi.store.entity.User.Role;
 import is.hi.store.dto.RegisterRequest;
 import is.hi.store.dto.LoginRequest;
+import is.hi.store.dto.FieldErrorDetail;
 import is.hi.store.exception.EmailAlreadyExistsException;
 import is.hi.store.exception.InvalidCredentialsException;
+import is.hi.store.exception.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 
 public interface AuthService {
@@ -26,6 +31,15 @@ class AuthServiceImplementation implements AuthService {
 	private PasswordEncoder passwordEncoder;
 
 	public User register(RegisterRequest request, Role role) {
+		// All three are required here, so a missing one is checked as "" and fails its rule.
+		List<FieldErrorDetail> errors = new ArrayList<>();
+		UserServiceImplementation.validateName(Objects.requireNonNullElse(request.getUsername(), ""), errors);
+		UserServiceImplementation.validateEmail(Objects.requireNonNullElse(request.getEmail(), ""), errors);
+		UserServiceImplementation.validatePassword(Objects.requireNonNullElse(request.getPassword(), ""), errors);
+		if (!errors.isEmpty()) {
+			throw new InvalidRequestException(errors);
+		}
+
 		if (userRepository.findByEmail(request.getEmail()).isPresent()) {
 			throw new EmailAlreadyExistsException("Email already in use: " + request.getEmail());
 		}

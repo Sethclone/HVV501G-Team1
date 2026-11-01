@@ -156,4 +156,23 @@ class AdminControllerTests {
 			.andExpect(jsonPath("$.mustChangePassword").value(false));
 		listOrders(token).andExpect(status().isOk());
 	}
+
+	@Test
+	void createdAdminCanLogIn() throws Exception {
+		mvc.perform(post("/api/admin/users").header("Authorization", "Bearer " + rootToken()).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"name\":\"New Admin\",\"email\":\"a-new-admin@example.com\",\"password\":\"adminpassword\"}"))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.username").value("New Admin"))
+			.andExpect(jsonPath("$.email").value("a-new-admin@example.com"))
+			.andExpect(jsonPath("$.role").value("ADMIN"));
+		login("a-new-admin@example.com", "adminpassword");
+	}
+
+	@Test
+	void registerValidatesInput() throws Exception {
+		mvc.perform(post("/api/auth/register").header("Authorization", "Bearer " + rootToken()).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"username\":\" \",\"email\":\"not-an-email\"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fieldErrors.length()").value(3));
+	}
 }
