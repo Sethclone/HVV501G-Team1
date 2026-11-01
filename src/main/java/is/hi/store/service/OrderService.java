@@ -12,6 +12,7 @@ import is.hi.store.entity.OrderItem;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
 import is.hi.store.exception.OrderNotFoundException;
+import is.hi.store.exception.ResourceNotFoundException;
 import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.exception.ProductNotFoundException;
@@ -33,6 +34,7 @@ import java.util.Map;
 
 public interface OrderService {
     OrderResponse createOrder(String email, CreateOrderRequest request);
+	OrderResponse removeItem(Long orderId, Long itemId);
     OrderResponse getOrderById(Long id);
     PagedResponse<OrderResponse> getOrders(String status, int page, int size);
 }
@@ -131,7 +133,42 @@ class OrderServiceImplementation implements OrderService {
 
         Order savedOrder = orderRepository.save(order);
         return mapToResponse(savedOrder);
-    }
+    } 
+
+	@Transactional
+	public OrderResponse removeItem(Long orderId, Long itemId) {
+		List<FieldErrorDetail> errors = new ArrayList<FieldErrorDetail>();
+		Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
+
+		if(order.getStatus() != OrderStatus.PENDING) {
+			errors.add(new FieldErrorDetail("status", "Must be PENDING"));
+			throw new InvalidRequestException(errors);
+		}
+
+		OrderItem item = 
+		order
+		.getItems()
+		.stream()
+		.filter(i -> i.getId().equals(itemId))
+		.findFirst()
+		.orElseThrow(() -> new ResourceNotFoundException("Order Item", itemId));
+
+		Product product = item.getProduct();
+
+		product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+		order.getItems().remove(item);
+		order.setTotalPrice(
+			order.getItems()
+			.stream()
+			.map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
+			.reduce(BigDecimal.ZERO, (a,b) -> a.add(b))
+			);
+
+		productRepository.save(product);
+		orderRepository.save(order);
+
+		return new OrderResponse(order);
+	}
 
     private OrderResponse mapToResponse(Order order) {
         OrderResponse response = new OrderResponse();
