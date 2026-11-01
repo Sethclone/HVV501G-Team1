@@ -11,5 +11,6 @@ public interface UserRepository extends Repository<User, Long> {
 	Long count();
 	@Query("select count(p) >= 1 from User p where p.role = ?1")
 	boolean findExistsByRole(Role role);
+	long countByRole(Role role);
 	Optional<User> findByEmail(String email);
 }

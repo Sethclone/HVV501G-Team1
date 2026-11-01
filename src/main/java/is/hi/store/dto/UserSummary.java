@@ -9,6 +9,7 @@ public class UserSummary {
 	private String email;
 	private Role role;
 	private String profilePicURL;
+	private boolean mustChangePassword;	// true after an admin reset, client should prompt for PUT /api/users/me
 
 	public UserSummary() {}
 
@@ -18,6 +19,7 @@ public class UserSummary {
 		this.email = user.getEmail();
 		this.role = user.getRole();
 		this.profilePicURL = user.getProfilePictureURL();
+		this.mustChangePassword = user.isMustChangePassword();
 	}
 
 	public long getId() { return id; }
@@ -34,4 +36,7 @@ public class UserSummary {
 	
 	public String getProfilePicURL() { return profilePicURL; }
 	public void setProfilePicURL(String profilePicURL) { this.profilePicURL = profilePicURL; }
+
+	public boolean isMustChangePassword() { return mustChangePassword; }
+	public void setMustChangePassword(boolean mustChangePassword) { this.mustChangePassword = mustChangePassword; }
 }

@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -37,9 +38,14 @@ public class SecurityConfig {
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers("/api/auth/login").permitAll()
+				// Spring forwards unhandled errors here. Without this the real status gets masked as 401/403.
+				.requestMatchers("/error").permitAll()
+				// Reachable with a pending password change (UC7 reset), so the user can set a new one.
+				.requestMatchers(HttpMethod.PUT, "/api/users/me").authenticated()
 				.requestMatchers("/api/auth/register").hasRole("ADMIN")
 				.requestMatchers("/api/admin/**").hasRole("ADMIN")
-				.anyRequest().authenticated()
+				// Not authenticated(): a PASSWORD_CHANGE_REQUIRED user has no role and is kept out (403).
+				.anyRequest().hasAnyRole("STAFF", "ADMIN")
 			)
 			.exceptionHandling(exceptions -> exceptions
 				// Both happen in the filter chain, before any controller runs, so
