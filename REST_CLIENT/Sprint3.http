@@ -1,0 +1,351 @@
+@baseUrl = http://localhost:8090
+
+# Sprint 3 demo. Restart the app first (H2 is in memory), then send the requests top to bottom,
+# later requests reuse tokens and ids from earlier ones.
+
+############################################################
+# SETUP
+############################################################
+
+### S1. Log in as the seeded admin
+# @name admin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "root@example.com",
+  "password": "password"
+}
+
+### S2. Admin registers a staff member (UC4 from Sprint 1)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+Authorization: Bearer {{admin.response.body.$.token}}
+
+{
+  "username": "Jon Staff",
+  "email": "jon@example.com",
+  "password": "secret123"
+}
+
+### S3. Log in as the staff member, the order requests below run as staff
+# @name staff
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "jon@example.com",
+  "password": "secret123"
+}
+
+### S4. Create products to order (UC2 is multipart/form, so no JSON here)
+# @name milk
+POST {{baseUrl}}/api/products
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=Milk&category=Dairy&price=299&stockQuantity=10
+
+### S5.
+# @name cheese
+POST {{baseUrl}}/api/products
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=Cheese&category=Dairy&price=1490&stockQuantity=5
+
+############################################################
+# UC11: Create order
+############################################################
+
+### 11.1 2 Milk + 1 Cheese, expect 201, status PENDING, totalPrice 2088 (2 x 299 + 1490)
+# @name order
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": {{milk.response.body.$.id}}, "quantity": 2 },
+    { "productId": {{cheese.response.body.$.id}}, "quantity": 1 }
+  ]
+}
+
+### 11.2 Stock was deducted, Milk 10 -> 8 (decision #2)
+GET {{baseUrl}}/api/products/{{milk.response.body.$.id}}
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 11.3 No items, expect 400
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "items": []
+}
+
+### 11.4 Missing productId and zero quantity, expect 400 listing both field errors
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "items": [
+    { "quantity": 0 }
+  ]
+}
+
+### 11.5 More Cheese than in stock, expect 400 and the whole order is rejected (Milk stays at 8)
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": {{milk.response.body.$.id}}, "quantity": 1 },
+    { "productId": {{cheese.response.body.$.id}}, "quantity": 99 }
+  ]
+}
+
+### 11.6 Product doesn't exist, expect 404
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": 9999, "quantity": 1 }
+  ]
+}
+
+### 11.7 A second order (1 Milk), used by UC12 and UC18 below
+# @name order2
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": {{milk.response.body.$.id}}, "quantity": 1 }
+  ]
+}
+
+### 11.8 No token, expect 401
+POST {{baseUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": {{milk.response.body.$.id}}, "quantity": 1 }
+  ]
+}
+
+############################################################
+# UC17: View order by id
+############################################################
+
+### 17.1 The first order with its items, each with unitPrice and subtotal
+GET {{baseUrl}}/api/orders/{{order.response.body.$.id}}
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 17.2 Order doesn't exist, expect 404
+GET {{baseUrl}}/api/orders/9999
+Authorization: Bearer {{staff.response.body.$.token}}
+
+############################################################
+# UC12: View all orders (paginated)
+############################################################
+
+### 12.1 No filters, defaults page=0 size=20, newest first
+GET {{baseUrl}}/api/orders
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 12.2 Filter by status
+GET {{baseUrl}}/api/orders?status=PENDING
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 12.3 Status is case insensitive
+GET {{baseUrl}}/api/orders?status=pending
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 12.4 No SHIPPED orders yet, empty content (not an error)
+GET {{baseUrl}}/api/orders?status=SHIPPED
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 12.5 Unknown status, expect 400
+GET {{baseUrl}}/api/orders?status=LOST
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 12.6 Pagination, 1 per page gives totalPages=2
+GET {{baseUrl}}/api/orders?page=0&size=1
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 12.7 Negative page and zero size, expect 400 listing both field errors
+GET {{baseUrl}}/api/orders?page=-1&size=0
+Authorization: Bearer {{staff.response.body.$.token}}
+
+############################################################
+# UC18: Remove item from order
+############################################################
+
+### 18.1 Remove the Cheese line from the first order, expect 200, totalPrice 2088 -> 598
+DELETE {{baseUrl}}/api/orders/{{order.response.body.$.id}}/items/{{order.response.body.$.items[1].id}}
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 18.2 Cheese stock was restored, 4 -> 5 (decision #3)
+GET {{baseUrl}}/api/products/{{cheese.response.body.$.id}}
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 18.3 Same item again, it's gone, expect 404
+DELETE {{baseUrl}}/api/orders/{{order.response.body.$.id}}/items/{{order.response.body.$.items[1].id}}
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 18.4 Item belongs to the second order, not this one, expect 404
+DELETE {{baseUrl}}/api/orders/{{order.response.body.$.id}}/items/{{order2.response.body.$.items[0].id}}
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 18.5 Order doesn't exist, expect 404
+DELETE {{baseUrl}}/api/orders/9999/items/1
+Authorization: Bearer {{staff.response.body.$.token}}
+
+############################################################
+# UC7: Admin manages user accounts
+############################################################
+
+### 7.1 Admin registers the user to manage (a separate user, so the reset below doesn't break Jon)
+# @name anna
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+Authorization: Bearer {{admin.response.body.$.token}}
+
+{
+  "username": "Anna Staff",
+  "email": "anna@example.com",
+  "password": "secret123"
+}
+
+### 7.2 Change name and email, expect 200 with the updated UserSummary
+PUT {{baseUrl}}/api/admin/users/{{anna.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "name": "Anna Jonsdottir",
+  "email": "anna.j@example.com"
+}
+
+### 7.3 Promote to ADMIN, only role changes
+PUT {{baseUrl}}/api/admin/users/{{anna.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "role": "ADMIN"
+}
+
+### 7.4 Staff can't manage users, expect 403
+PUT {{baseUrl}}/api/admin/users/{{anna.response.body.$.id}}
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "role": "STAFF"
+}
+
+### 7.5 Blank name and invalid email, expect 400 listing both field errors
+PUT {{baseUrl}}/api/admin/users/{{anna.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "name": "  ",
+  "email": "not-an-email"
+}
+
+### 7.6 Email already used by Jon, expect 409
+PUT {{baseUrl}}/api/admin/users/{{anna.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "email": "jon@example.com"
+}
+
+### 7.7 Admin tries to demote themselves, expect 400 on role (decision #7)
+PUT {{baseUrl}}/api/admin/users/{{admin.response.body.$.user.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "role": "STAFF"
+}
+
+### 7.8 User doesn't exist, expect 404
+PUT {{baseUrl}}/api/admin/users/9999
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "name": "Nobody"
+}
+
+### 7.9 Demote Anna back to STAFF, allowed because root is still an admin
+PUT {{baseUrl}}/api/admin/users/{{anna.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "role": "STAFF"
+}
+
+### 7.10 Reset Anna's password, the temporary password is only shown this once (decision #8)
+# @name reset
+POST {{baseUrl}}/api/admin/users/{{anna.response.body.$.id}}/reset-password
+Authorization: Bearer {{admin.response.body.$.token}}
+
+### 7.11 Old password no longer works, expect 401
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "anna.j@example.com",
+  "password": "secret123"
+}
+
+### 7.12 Log in with the temporary password, user.mustChangePassword is true
+# @name annaTemp
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "anna.j@example.com",
+  "password": "{{reset.response.body.$.temporaryPassword}}"
+}
+
+### 7.13 Every other endpoint is blocked until the password is changed, expect 403
+GET {{baseUrl}}/api/orders
+Authorization: Bearer {{annaTemp.response.body.$.token}}
+
+### 7.14 Reusing the temporary password as the new one, expect 400
+PUT {{baseUrl}}/api/users/me
+Authorization: Bearer {{annaTemp.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "password": "{{reset.response.body.$.temporaryPassword}}",
+  "currentPassword": "{{reset.response.body.$.temporaryPassword}}"
+}
+
+### 7.15 Set a new password (temporary one goes in currentPassword), mustChangePassword becomes false
+PUT {{baseUrl}}/api/users/me
+Authorization: Bearer {{annaTemp.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "password": "newsecret123",
+  "currentPassword": "{{reset.response.body.$.temporaryPassword}}"
+}
+
+### 7.16 Same token works again now, expect 200
+GET {{baseUrl}}/api/orders
+Authorization: Bearer {{annaTemp.response.body.$.token}}

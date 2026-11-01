@@ -104,6 +104,15 @@ class ProductServiceImplementation implements ProductService {
 	}
 
     public ProductResponse createProduct(ProductCreateRequest request) {
+        // Name, category and price are required here, so a missing one is checked as empty and fails its rule.
+        // Stock may be left out, it defaults to 0 below.
+        validateFields(
+            Objects.requireNonNullElse(request.getName(), ""),
+            Objects.requireNonNullElse(request.getCategory(), ""),
+            Objects.requireNonNullElse(request.getPrice(), BigDecimal.ZERO),
+            request.getStockQuantity()
+        );
+
         String imageUrl = null;
         MultipartFile file = request.getImage();
 
@@ -148,39 +157,8 @@ class ProductServiceImplementation implements ProductService {
     public ProductResponse updateProduct(Long id, ProductUpdateRequest request) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
 
-        List<FieldErrorDetail> errors = new ArrayList<>();
         if (request != null) {
-            if (request.getName() != null) {
-                if (request.getName().isBlank()) {
-                    errors.add(new FieldErrorDetail("name", "Name must not be blank"));
-                } else if (request.getName().length() > 255) {
-                    errors.add(new FieldErrorDetail("name", "Name must be at most 255 characters"));
-                }
-            }
-            if (request.getCategory() != null) {
-                if (request.getCategory().isBlank()) {
-                    errors.add(new FieldErrorDetail("category", "Category must not be blank"));
-                } else if (request.getCategory().length() > 255) {
-                    errors.add(new FieldErrorDetail("category", "Category must be at most 255 characters"));
-                }
-            }
-            if (request.getPrice() != null) {
-                if (request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-                    errors.add(new FieldErrorDetail("price", "Price must be greater than zero"));
-                }
-            }
-            if (request.getStockQuantity() != null) {
-                if (request.getStockQuantity() < 0) {
-                    errors.add(new FieldErrorDetail("stockQuantity", "Stock quantity must not be negative"));
-                }
-            }
-        }
-
-        if (!errors.isEmpty()) {
-            throw new InvalidRequestException(errors);
-        }
-
-        if (request != null) {
+            validateFields(request.getName(), request.getCategory(), request.getPrice(), request.getStockQuantity());
             if (request.getName() != null) {
                 product.setName(request.getName());
             }
@@ -203,6 +181,30 @@ class ProductServiceImplementation implements ProductService {
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
         productRepository.delete(product);
+    }
+
+    // Shared by create and update. A null value means "not being changed" and passes.
+    private void validateFields(String name, String category, BigDecimal price, Integer stockQuantity) {
+        List<FieldErrorDetail> errors = new ArrayList<>();
+        if (name != null && name.isBlank()) {
+            errors.add(new FieldErrorDetail("name", "Name must not be blank"));
+        } else if (name != null && name.length() > 255) {
+            errors.add(new FieldErrorDetail("name", "Name must be at most 255 characters"));
+        }
+        if (category != null && category.isBlank()) {
+            errors.add(new FieldErrorDetail("category", "Category must not be blank"));
+        } else if (category != null && category.length() > 255) {
+            errors.add(new FieldErrorDetail("category", "Category must be at most 255 characters"));
+        }
+        if (price != null && price.compareTo(BigDecimal.ZERO) <= 0) {
+            errors.add(new FieldErrorDetail("price", "Price must be greater than zero"));
+        }
+        if (stockQuantity != null && stockQuantity < 0) {
+            errors.add(new FieldErrorDetail("stockQuantity", "Stock quantity must not be negative"));
+        }
+        if (!errors.isEmpty()) {
+            throw new InvalidRequestException(errors);
+        }
     }
 
     private ProductResponse mapToResponse(Product product) {
