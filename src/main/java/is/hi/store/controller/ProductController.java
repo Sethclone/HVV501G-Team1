@@ -2,7 +2,6 @@ package is.hi.store.controller;
 
 import is.hi.store.dto.*;
 import is.hi.store.service.ProductService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

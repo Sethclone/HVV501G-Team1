@@ -57,12 +57,9 @@ class UserServiceImplementation implements UserService {
 
 		List<FieldErrorDetail> errors = new ArrayList<>();
 		validateName(request.getName(), errors);
+		validatePassword(request.getPassword(), errors);
 		if (request.getPassword() != null) {
-			if (request.getPassword().length() < 8) {
-				errors.add(new FieldErrorDetail("password", "Password must be at least 8 characters"));
-			} else if (request.getPassword().getBytes(StandardCharsets.UTF_8).length > 72) {	// BCrypt hard limit, encode() throws past it
-				errors.add(new FieldErrorDetail("password", "Password must be at most 72 bytes"));
-			} else if (user.isMustChangePassword() && passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+			if (user.isMustChangePassword() && passwordEncoder.matches(request.getPassword(), user.getPassword())) {
 				// Otherwise the user could clear the flag and keep the temp password the admin saw.
 				errors.add(new FieldErrorDetail("password", "New password must differ from the temporary password"));
 			}
@@ -92,9 +89,7 @@ class UserServiceImplementation implements UserService {
 		List<FieldErrorDetail> errors = new ArrayList<>();
 		validateName(request.getName(), errors);
 		String email = request.getEmail();
-		if (email != null && (email.length() > 255 || !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))) {
-			errors.add(new FieldErrorDetail("email", "Email must be a valid address of at most 255 characters"));
-		}
+		validateEmail(email, errors);
 		// Lockout guards. Not atomic: two admins demoting each other at the same moment can both pass.
 		if (user.getRole() == Role.ADMIN && request.getRole() == Role.STAFF) {
 			if (user.getEmail().equals(actorEmail)) {
@@ -149,11 +144,26 @@ class UserServiceImplementation implements UserService {
 		return user;
 	}
 
-	private void validateName(String name, List<FieldErrorDetail> errors) {
+	// Shared with AuthService.register. A null value means "not being changed" and passes.
+	static void validateName(String name, List<FieldErrorDetail> errors) {
 		if (name != null && name.isBlank()) {
 			errors.add(new FieldErrorDetail("name", "Name must not be blank"));
 		} else if (name != null && name.length() > 255) {	// default column length
 			errors.add(new FieldErrorDetail("name", "Name must be at most 255 characters"));
+		}
+	}
+
+	static void validateEmail(String email, List<FieldErrorDetail> errors) {
+		if (email != null && (email.length() > 255 || !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))) {
+			errors.add(new FieldErrorDetail("email", "Email must be a valid address of at most 255 characters"));
+		}
+	}
+
+	static void validatePassword(String password, List<FieldErrorDetail> errors) {
+		if (password != null && password.length() < 8) {
+			errors.add(new FieldErrorDetail("password", "Password must be at least 8 characters"));
+		} else if (password != null && password.getBytes(StandardCharsets.UTF_8).length > 72) {	// BCrypt hard limit, encode() throws past it
+			errors.add(new FieldErrorDetail("password", "Password must be at most 72 bytes"));
 		}
 	}
 

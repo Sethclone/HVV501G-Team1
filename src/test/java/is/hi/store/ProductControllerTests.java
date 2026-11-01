@@ -129,7 +129,8 @@ class ProductControllerTests {
 	void productCreatedWithoutStockStartsAtZero() throws Exception {
 		String token = staffToken("sm-nostock@example.com");
 		// Used to save a null stock, then any stock movement on it was a 500.
-		String body = mvc.perform(multipart("/api/products").param("name", "No stock").header("Authorization", "Bearer " + token))
+		String body = mvc.perform(multipart("/api/products").param("name", "No stock").param("category", "Tools").param("price", "9.99")
+				.header("Authorization", "Bearer " + token))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.stockQuantity").value(0))
 			.andReturn().getResponse().getContentAsString();
@@ -137,6 +138,15 @@ class ProductControllerTests {
 		move(token, id, "{\"quantity\":2,\"type\":\"ADD\"}")
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.newStockLevel").value(2));
+	}
+
+	@Test
+	void createRejectsMissingFields() throws Exception {
+		String token = staffToken("p-missing@example.com");
+		// A product without a price used to save, then any order containing it was a 500.
+		mvc.perform(multipart("/api/products").param("stockQuantity", "-1").header("Authorization", "Bearer " + token))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fieldErrors.length()").value(4));
 	}
 
 	// UC9
