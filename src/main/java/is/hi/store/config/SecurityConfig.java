@@ -38,6 +38,8 @@ public class SecurityConfig {
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers("/api/auth/login").permitAll()
+				// Spring forwards unhandled errors here. Without this the real status gets masked as 401/403.
+				.requestMatchers("/error").permitAll()
 				// Reachable with a pending password change (UC7 reset), so the user can set a new one.
 				.requestMatchers(HttpMethod.PUT, "/api/users/me").authenticated()
 				.requestMatchers("/api/auth/register").hasRole("ADMIN")

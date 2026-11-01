@@ -145,6 +145,11 @@ class AdminControllerTests {
 		String token = JsonPath.read(loginBody, "$.token");
 
 		listOrders(token).andExpect(status().isForbidden());
+		// Reusing the temp password must not clear the flag.
+		mvc.perform(put("/api/users/me").header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"password\":\"" + temp + "\",\"currentPassword\":\"" + temp + "\"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fieldErrors[0].field").value("password"));
 		mvc.perform(put("/api/users/me").header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"password\":\"newpassword\",\"currentPassword\":\"" + temp + "\"}"))
 			.andExpect(status().isOk())

@@ -12,6 +12,7 @@ import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.exception.UserNotFoundException;
 import is.hi.store.dto.UploadProfilePicRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -61,6 +62,9 @@ class UserServiceImplementation implements UserService {
 				errors.add(new FieldErrorDetail("password", "Password must be at least 8 characters"));
 			} else if (request.getPassword().getBytes(StandardCharsets.UTF_8).length > 72) {	// BCrypt hard limit, encode() throws past it
 				errors.add(new FieldErrorDetail("password", "Password must be at most 72 bytes"));
+			} else if (user.isMustChangePassword() && passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+				// Otherwise the user could clear the flag and keep the temp password the admin saw.
+				errors.add(new FieldErrorDetail("password", "New password must differ from the temporary password"));
 			}
 			// Re-auth so a stolen token can't lock the owner out - only an admin could recover the account.
 			if (request.getCurrentPassword() == null || !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -83,10 +87,7 @@ class UserServiceImplementation implements UserService {
 
 	// UC7. actorEmail is the calling admin (from the token), used to stop self-demotion.
 	public User adminUpdateUser(String actorEmail, long id, AdminUpdateUserRequest request) {
-		User user = userRepository.findById(id);
-		if (user == null) {
-			throw new UserNotFoundException(id);
-		}
+		User user = findUser(id);
 
 		List<FieldErrorDetail> errors = new ArrayList<>();
 		validateName(request.getName(), errors);
@@ -94,8 +95,7 @@ class UserServiceImplementation implements UserService {
 		if (email != null && (email.length() > 255 || !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))) {
 			errors.add(new FieldErrorDetail("email", "Email must be a valid address of at most 255 characters"));
 		}
-		// Lockout guards. With roles read from the DB per request, the self check alone already keeps one
-		// admin around, the last-admin check is defense in depth.
+		// Lockout guards. Not atomic: two admins demoting each other at the same moment can both pass.
 		if (user.getRole() == Role.ADMIN && request.getRole() == Role.STAFF) {
 			if (user.getEmail().equals(actorEmail)) {
 				errors.add(new FieldErrorDetail("role", "Admins cannot demote themselves"));
@@ -119,16 +119,17 @@ class UserServiceImplementation implements UserService {
 		if (request.getRole() != null) {
 			user.setRole(request.getRole());
 		}
-		return userRepository.save(user);
+		try {
+			return userRepository.save(user);
+		} catch (DataIntegrityViolationException e) {	// email taken between the check above and the save
+			throw new EmailAlreadyExistsException("Email already in use: " + email);
+		}
 	}
 
 	// UC7. Closed system, a locked out user can only get back in through an admin. The temp password is
 	// returned once and the user is forced to change it (see JwtAuthenticationFilter).
 	public String resetPassword(long id) {
-		User user = userRepository.findById(id);
-		if (user == null) {
-			throw new UserNotFoundException(id);
-		}
+		User user = findUser(id);
 		byte[] bytes = new byte[12];
 		RANDOM.nextBytes(bytes);
 		String temporaryPassword = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);	// 16 chars
@@ -139,6 +140,14 @@ class UserServiceImplementation implements UserService {
 	}
 
 	private static final SecureRandom RANDOM = new SecureRandom();
+
+	private User findUser(long id) {
+		User user = userRepository.findById(id);
+		if (user == null) {
+			throw new UserNotFoundException(id);
+		}
+		return user;
+	}
 
 	private void validateName(String name, List<FieldErrorDetail> errors) {
 		if (name != null && name.isBlank()) {
