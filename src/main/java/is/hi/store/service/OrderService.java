@@ -1,6 +1,7 @@
 package is.hi.store.service;
 
 import is.hi.store.dto.CreateOrderRequest;
+import is.hi.store.dto.UpdateOrderStatusRequest;
 import is.hi.store.dto.FieldErrorDetail;
 import is.hi.store.dto.OrderItemRequest;
 import is.hi.store.dto.OrderItemResponse;
@@ -11,9 +12,11 @@ import is.hi.store.entity.Order.OrderStatus;
 import is.hi.store.entity.OrderItem;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
+import is.hi.store.entity.User.Role;
 import is.hi.store.exception.OrderNotFoundException;
 import is.hi.store.exception.ResourceNotFoundException;
 import is.hi.store.exception.InvalidCredentialsException;
+import is.hi.store.exception.InsufficientPermissionsException;
 import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.exception.ProductNotFoundException;
 import is.hi.store.repository.OrderRepository;
@@ -37,6 +40,8 @@ public interface OrderService {
 	OrderResponse removeItem(Long orderId, Long itemId);
     OrderResponse getOrderById(Long id);
     PagedResponse<OrderResponse> getOrders(String status, int page, int size);
+	OrderResponse updateOrderStatus(Long id, UpdateOrderStatusRequest request, String email);
+	void deleteOrder(Long id);
 }
 
 @Service
@@ -238,4 +243,75 @@ class OrderServiceImplementation implements OrderService {
         return new PagedResponse<>(content, result.getNumber(), result.getSize(),
                 result.getTotalElements(), result.getTotalPages());
     }
+
+	@Transactional
+	public OrderResponse updateOrderStatus(
+		Long id,
+		UpdateOrderStatusRequest request,
+		String email
+	) {
+		Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+		User user = userRepository.findByEmail(email)
+			.orElseThrow(() -> new InvalidCredentialsException("Account no longer exists"));
+
+		OrderStatus currentStatus = order.getStatus();
+		OrderStatus targetStatus = request.getStatus();
+
+        List<FieldErrorDetail> errors = new ArrayList<>();
+
+		if(request == null || request.getStatus() == null) {
+			errors.add(new FieldErrorDetail("status", "Request must contain status");
+		}
+
+		String illegalTransitionMessage = 
+		"Order status transition illegal: " +
+		currentStatus + " to " + targetStatus;
+
+		FieldErrorDetail illegalTransitionDetail = new FieldErrorDetail("status", illegalTransitionMessage);
+
+		if(currentStatus == targetStatus) 
+            errors.add(illegalTransitionDetail);
+		else if(currentStatus == OrderStatus.PENDING && targetStatus == OrderStatus.SHIPPED)
+            errors.add(illegalTransitionDetail);
+		else if(currentStatus == OrderStatus.CONFIRMED && targetStatus == OrderStatus.PENDING)
+            errors.add(illegalTransitionDetail);
+		else if(currentStatus == OrderStatus.SHIPPED && targetStatus == OrderStatus.PENDING)
+            errors.add(illegalTransitionDetail);
+		else if(currentStatus == OrderStatus.SHIPPED && targetStatus == OrderStatus.CONFIRMED)
+            errors.add(illegalTransitionDetail);
+		else if(currentStatus == OrderStatus.CANCELLED)
+            errors.add(illegalTransitionDetail);
+
+		if(!errors.isEmpty())
+            throw new InvalidRequestException(errors);
+
+		order.setStatus(targetStatus);
+		if(targetStatus != OrderStatus.CANCELLED) {
+			orderRepository.save(order);
+			return new OrderResponse(order);
+		}
+
+		if(user.getRole() != Role.ADMIN)
+			throw new InsufficientPermissionsException("Must be ADMIN to perform this operation");
+
+		List<OrderItem> items = order.getItems();
+		List<Product> products = new ArrayList<>();
+		for(OrderItem item : items) {
+			Product product = item.getProduct();
+			product.setStockQuantity(product.getStockQuantity()+item.getQuantity());
+			products.add(product);
+		}
+
+		productRepository.saveAll(products);
+		orderRepository.save(order);
+		return new OrderResponse(order);
+	}
+
+	@Transactional
+	public void deleteOrder(Long id) {	
+		Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+		if(order.getStatus() != OrderStatus.CANCELLED)
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Only cancelled orders can be deleted")));
+		orderRepository.delete(order);
+	}
 }

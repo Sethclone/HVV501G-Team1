@@ -19,6 +19,11 @@ public class ApiExceptionHandler {
 		return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
 	}
 
+	@ExceptionHandler(InsufficientPermissionsException.class)
+	public ResponseEntity<ErrorResponse> handleInsufficientPermissions(InsufficientPermissionsException ex, HttpServletRequest request) {
+		return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+	}
+
 	@ExceptionHandler(EmailAlreadyExistsException.class)
 	public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex, HttpServletRequest request) {
 		return build(HttpStatus.CONFLICT, ex.getMessage(), request);
