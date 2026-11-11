@@ -254,14 +254,13 @@ class OrderServiceImplementation implements OrderService {
 		User user = userRepository.findByEmail(email)
 			.orElseThrow(() -> new InvalidCredentialsException("Account no longer exists"));
 
+		if(request == null || request.getStatus() == null) 
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Request must contain status"));
+
 		OrderStatus currentStatus = order.getStatus();
 		OrderStatus targetStatus = request.getStatus();
 
         List<FieldErrorDetail> errors = new ArrayList<>();
-
-		if(request == null || request.getStatus() == null) {
-			errors.add(new FieldErrorDetail("status", "Request must contain status");
-		}
 
 		String illegalTransitionMessage = 
 		"Order status transition illegal: " +
