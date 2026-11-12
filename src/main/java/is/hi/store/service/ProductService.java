@@ -114,11 +114,11 @@ class ProductServiceImplementation implements ProductService {
             request.getStockQuantity()
         );
 
-		String fileName = null;
+		String imageUrl = null;
 		MultipartFile file = request.getImage();
 		try {
-			fileName = ImageStorage.save(file);
-		} catch (Exception e) {
+			imageUrl = ImageStorage.save(file);
+		} catch (IOException e) {
 			throw new RuntimeException(e.getMessage());
 		}
 
@@ -128,9 +128,9 @@ class ProductServiceImplementation implements ProductService {
 		product.setPrice(request.getPrice());
 		// Default to 0, a null stock would crash stock movements (UC1) with a 500.
 		product.setStockQuantity(request.getStockQuantity() == null ? 0 : request.getStockQuantity());
-		product.setImageUrl("/images/"+fileName);
+		product.setImageUrl(imageUrl);
 
-		Product savedProduct = productRepository.save(null);
+		Product savedProduct = productRepository.save(product);
 		return mapToResponse(savedProduct);
     }
 
