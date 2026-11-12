@@ -29,4 +29,8 @@ public class ImageController {
 				.contentType(MediaType.valueOf("image/"+resource.getFilename().substring(dotIndex+1)))
 				.body(resource);
     }
+
+	//We could add a Post mapping for uploading images.
+	//We could then decouple disk writes from database updates, fixing the atomicity issues.
+	//Maybe not feasible so close to deadline.
 }
