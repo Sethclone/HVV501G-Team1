@@ -5,6 +5,8 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import org.apache.tika.Tika;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -18,14 +20,23 @@ public class ImageStorage {
         if (file == null) { return null; }
 		if(!uploadDirectory.exists()) uploadDirectory.mkdir();
 
+		InputStream fis = file.getInputStream()
+		Tika tika = new Tika();
+		String detectedFileType = tika.detect(fis);
+
+		if(!allowedMimeTypes.contains(detectedFileType)) {
+			errors.add(new FieldErrorDetail("image", detectedFileType + " not supported"));
+			throw new InvalidRequestException(errors);
+		}
+
 		LocalDateTime now = LocalDateTime.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 		String timestamp = now.format(formatter);
 		String fileName = timestamp + "_" + file.getOriginalFilename();
 		Path filePath = Paths.get(uploadDirectory.toString()).resolve(fileName);
 
-		Files.copy(file.getInputStream(), filePath);
-		String imageUrl = "/images/" + fileName;
+		Files.copy(fis, filePath);
+		String imageUrl = "/api/images/" + fileName;
 		return imageUrl;
 	}
 }
