@@ -146,3 +146,4 @@ Do this before the submission:
   - `StockMovementResponse` with a null performer after UC15.
 - Verify `main` builds, all tests pass, and the seeded admin can still log in.
 
+Confession: An LLM was used in the creation of this document
