@@ -85,7 +85,7 @@ UC13 and UC15 return `204 No Content`, so they need no response DTO. UC19 and th
 | Method | Path | Use Case | Auth required | Owner |
 |---|---|---|---|---|
 | DELETE | `/api/orders/{id}` | UC13 | ADMIN only | Task A |
-| PATCH | `/api/orders/{id}/status` | Supporting (order lifecycle) | Authenticated staff; `CANCELLED` ADMIN only | Task A|
+| PATCH | `/api/orders/{id}/status` | Supporting (order lifecycle) | Authenticated staff | Task A|
 | DELETE | `/api/admin/users/{id}` | UC15 | ADMIN only | Task B |
 | PUT | `/api/orders/{id}/user` | UC19 | ADMIN only | Task C |
 | PUT | `/api/orders/{id}` | UC14 | Authenticated staff | Task D|
