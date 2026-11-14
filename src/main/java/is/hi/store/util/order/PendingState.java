@@ -11,9 +11,6 @@ public class PendingState extends OrderState {
 		super.transition(order,targetStatus);
 
 		switch(targetStatus) {
-			case OrderStatus.SHIPPED:
-				throwInvalidTransition(order.getStatus(), targetStatus);
-				break;
 			case OrderStatus.CONFIRMED:
 				order.setState(new ConfirmedState());
 				break;
@@ -21,7 +18,7 @@ public class PendingState extends OrderState {
 				order.setState(new CancelledState());
 				break;
 			default:
-				break;
+				throwInvalidTransition(order.getStatus(), targetStatus);
 		}
 
 		order.setStatus(targetStatus);
