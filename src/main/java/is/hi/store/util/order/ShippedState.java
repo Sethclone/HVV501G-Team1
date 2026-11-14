@@ -9,8 +9,14 @@ import java.util.*;
 public class ShippedState extends OrderState{
 	public void transition(Order order, OrderStatus targetStatus) {
 		super.transition(order,targetStatus);
-		if(targetStatus == OrderStatus.PENDING || targetStatus == OrderStatus.CONFIRMED)
-			throwInvalidTransition(order.getStatus(), targetStatus);
+
+		switch(targetStatus) {
+			case OrderStatus.PENDING:
+			case OrderStatus.CONFIRMED:
+				throwInvalidTransition(order.getStatus(), targetStatus);
+			default:
+				break;
+		}
 
 		order.setState(new CancelledState());
 		order.setStatus(targetStatus);
