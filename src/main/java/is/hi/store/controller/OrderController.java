@@ -60,10 +60,9 @@ public class OrderController {
 	@PatchMapping("/{id}/status")
 	public ResponseEntity<OrderResponse> updateStatus(
 		@PathVariable Long id,
-		@RequestBody UpdateOrderStatusRequest request,
-		Authentication auth
+		@RequestBody UpdateOrderStatusRequest request
 	) {
-		OrderResponse response = orderService.updateOrderStatus(id, request, auth.getName());
+		OrderResponse response = orderService.updateOrderStatus(id, request);
 		return ResponseEntity.ok(response);
 	}
 }

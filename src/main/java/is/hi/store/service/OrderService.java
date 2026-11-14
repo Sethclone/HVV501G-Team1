@@ -39,7 +39,7 @@ public interface OrderService {
 	OrderResponse removeItem(Long orderId, Long itemId);
     OrderResponse getOrderById(Long id);
     PagedResponse<OrderResponse> getOrders(String status, int page, int size);
-	OrderResponse updateOrderStatus(Long id, UpdateOrderStatusRequest request, String email);
+	OrderResponse updateOrderStatus(Long id, UpdateOrderStatusRequest request);
 	void deleteOrder(Long id);
 }
 
@@ -246,12 +246,9 @@ class OrderServiceImplementation implements OrderService {
 	@Transactional
 	public OrderResponse updateOrderStatus(
 		Long id,
-		UpdateOrderStatusRequest request,
-		String email
+		UpdateOrderStatusRequest request
 	) {
 		Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
-		User user = userRepository.findByEmail(email)
-			.orElseThrow(() -> new InvalidCredentialsException("Account no longer exists"));
 
 		if(request == null || request.getStatus() == null) 
 			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Request must contain status")));
