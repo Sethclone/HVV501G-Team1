@@ -16,7 +16,6 @@ import is.hi.store.entity.User.Role;
 import is.hi.store.exception.OrderNotFoundException;
 import is.hi.store.exception.ResourceNotFoundException;
 import is.hi.store.exception.InvalidCredentialsException;
-import is.hi.store.exception.InsufficientPermissionsException;
 import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.exception.ProductNotFoundException;
 import is.hi.store.repository.OrderRepository;
@@ -255,7 +254,7 @@ class OrderServiceImplementation implements OrderService {
 			.orElseThrow(() -> new InvalidCredentialsException("Account no longer exists"));
 
 		if(request == null || request.getStatus() == null) 
-			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Request must contain status"));
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Request must contain status")));
 
 		OrderStatus currentStatus = order.getStatus();
 		OrderStatus targetStatus = request.getStatus();
@@ -289,9 +288,6 @@ class OrderServiceImplementation implements OrderService {
 			orderRepository.save(order);
 			return new OrderResponse(order);
 		}
-
-		if(user.getRole() != Role.ADMIN)
-			throw new InsufficientPermissionsException("Must be ADMIN to perform this operation");
 
 		List<OrderItem> items = order.getItems();
 		List<Product> products = new ArrayList<>();
