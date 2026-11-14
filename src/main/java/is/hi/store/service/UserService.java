@@ -11,6 +11,7 @@ import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.exception.UserNotFoundException;
 import is.hi.store.dto.UploadProfilePicRequest;
+import is.hi.store.util.ImageStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -168,29 +169,21 @@ class UserServiceImplementation implements UserService {
 	}
 
 	public User uploadProfilePicture(String email, UploadProfilePicRequest request) {
-		String uploadDirectory = "uploads/";
 		User user = userRepository.findByEmail(email)
 			.orElseThrow(() -> new InvalidCredentialsException("Account no longer Exists"));
 
+		if(request == null || request.getImage() == null)
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("image", "image must be provided")));
 		MultipartFile file = request.getImage();
-        if (file != null) {
-            try {
-                LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-                String timestamp = now.format(formatter);
-                String fileName = timestamp + "_" + file.getOriginalFilename();
-                Path filePath = Paths.get(uploadDirectory).resolve(fileName);
+		String imageUrl = null;
+		try {
+			imageUrl = ImageStorage.save(file);	
+		} catch (IOException e) {
+       		throw new RuntimeException("Uploading file failed", e);
+		}
 
-                Files.copy(file.getInputStream(), filePath);
-                String imageUrl = "/images/" + fileName;
-
-				user.setProfilePictureURL(imageUrl);
-				userRepository.save(user);
-            } catch (IOException e) {
-				//Need to change type of exception
-                throw new RuntimeException("Uploading file failed", e);
-            }
-        }
+		user.setProfilePictureURL(imageUrl);
+		userRepository.save(user);
 
 		return user;
 	}
