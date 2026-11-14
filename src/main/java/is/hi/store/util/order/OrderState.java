@@ -17,8 +17,22 @@ public abstract class OrderState {
 	}
 
 	public void transition(Order order, OrderStatus targetStatus) {
-		System.out.println(order.getStatus() + " -> " + targetStatus);
 		if(order.getStatus() == targetStatus) 
 			throwInvalidTransition(order.getStatus(), targetStatus);
+	}
+
+	public static OrderState fromStatus(OrderStatus status) {	
+		switch(status) {
+			case OrderStatus.PENDING:
+				return new PendingState();
+			case OrderStatus.CONFIRMED:
+				return new ConfirmedState();
+			case OrderStatus.SHIPPED:
+				return new ShippedState();
+			case OrderStatus.CANCELLED:
+				return new CancelledState();
+			default:
+				return null;
+		}
 	}
 }

@@ -13,7 +13,7 @@ public class Order {
 
     public enum OrderStatus { PENDING, CONFIRMED, SHIPPED, CANCELLED }
 
-	//State design pattern. Required
+	//State design pattern
 	@Transient
 	private OrderState state;
 
@@ -41,27 +41,9 @@ public class Order {
 	}
 
 	@Transient
-	private void initState() {	
-		switch(status) {
-			case OrderStatus.PENDING:
-				this.state = new PendingState();
-				break;
-			case OrderStatus.CONFIRMED:
-				this.state = new ConfirmedState();
-				break;
-			case OrderStatus.SHIPPED:
-				this.state = new ShippedState();
-				break;
-			case OrderStatus.CANCELLED:
-				this.state = new CancelledState();
-				break;
-		}
-	}
-	@Transient
 	public void transition(OrderStatus targetStatus) {
-		if(this.state == null) {
-			initState();
-		}
+		if(this.state == null) 
+			this.state = OrderState.fromStatus(this.status);
 
 		state.transition(this, targetStatus);
 	}
@@ -69,11 +51,6 @@ public class Order {
 	@Transient
 	public void setState(OrderState state) {
 		this.state = state;	
-	}
-
-	@Transient
-	public OrderState getState() {
-		return state;	
 	}
 
     public Long getId() {
