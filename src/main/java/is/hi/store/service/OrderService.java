@@ -256,31 +256,8 @@ class OrderServiceImplementation implements OrderService {
 		OrderStatus currentStatus = order.getStatus();
 		OrderStatus targetStatus = request.getStatus();
 
-        List<FieldErrorDetail> errors = new ArrayList<>();
+		order.transition(targetStatus);
 
-		String illegalTransitionMessage = 
-		"Order status transition illegal: " +
-		currentStatus + " to " + targetStatus;
-
-		FieldErrorDetail illegalTransitionDetail = new FieldErrorDetail("status", illegalTransitionMessage);
-
-		if(currentStatus == targetStatus) 
-            errors.add(illegalTransitionDetail);
-		else if(currentStatus == OrderStatus.PENDING && targetStatus == OrderStatus.SHIPPED)
-            errors.add(illegalTransitionDetail);
-		else if(currentStatus == OrderStatus.CONFIRMED && targetStatus == OrderStatus.PENDING)
-            errors.add(illegalTransitionDetail);
-		else if(currentStatus == OrderStatus.SHIPPED && targetStatus == OrderStatus.PENDING)
-            errors.add(illegalTransitionDetail);
-		else if(currentStatus == OrderStatus.SHIPPED && targetStatus == OrderStatus.CONFIRMED)
-            errors.add(illegalTransitionDetail);
-		else if(currentStatus == OrderStatus.CANCELLED)
-            errors.add(illegalTransitionDetail);
-
-		if(!errors.isEmpty())
-            throw new InvalidRequestException(errors);
-
-		order.setStatus(targetStatus);
 		if(targetStatus != OrderStatus.CANCELLED) {
 			orderRepository.save(order);
 			return new OrderResponse(order);
