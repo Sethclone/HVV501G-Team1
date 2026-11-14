@@ -8,8 +8,6 @@ import is.hi.store.dto.FieldErrorDetail;
 import java.util.*;
 public class PendingState extends OrderState {
 	public void transition(Order order, OrderStatus targetStatus) {
-		super.transition(order,targetStatus);
-
 		switch(targetStatus) {
 			case OrderStatus.CONFIRMED:
 				order.setState(new ConfirmedState());
