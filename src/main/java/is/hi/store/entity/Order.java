@@ -5,12 +5,17 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import is.hi.store.util.order.*;
 
 @Entity
 @Table(name = "orders")
 public class Order {
 
     public enum OrderStatus { PENDING, CONFIRMED, SHIPPED, CANCELLED }
+
+	//State design pattern
+	@Transient
+	private OrderState state;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,7 +26,7 @@ public class Order {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    private OrderStatus status = OrderStatus.PENDING;
+    private OrderStatus status;
 
     private BigDecimal totalPrice;
 
@@ -30,7 +35,23 @@ public class Order {
 
     private Instant createdAt = Instant.now();
 
-    public Order() {}
+    public Order() {
+		state = null;
+		status = OrderStatus.PENDING;
+	}
+
+	@Transient
+	public void transition(OrderStatus targetStatus) {
+		if(this.state == null) 
+			this.state = OrderState.fromStatus(this.status);
+
+		state.transition(this, targetStatus);
+	}
+
+	@Transient
+	public void setState(OrderState state) {
+		this.state = state;	
+	}
 
     public Long getId() {
         return id;
@@ -80,3 +101,5 @@ public class Order {
         this.createdAt = createdAt;
     }
 }
+
+
