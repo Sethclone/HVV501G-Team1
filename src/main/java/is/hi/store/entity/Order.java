@@ -52,7 +52,16 @@ public class Order {
 
 	@PostLoad
 	private void initState() {
-		this.state = OrderState.fromStatus(this.status);
+		switch(this.status) {
+			case OrderStatus.PENDING:
+				this.state = new PendingState(); break;
+			case OrderStatus.CONFIRMED:
+				this.state = new ConfirmedState(); break;
+			case OrderStatus.SHIPPED:
+				this.state = new ShippedState(); break;
+			case OrderStatus.CANCELLED:
+				this.state = new CancelledState();
+		}
 	}
 
     public Long getId() {
