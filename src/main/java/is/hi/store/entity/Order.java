@@ -51,7 +51,7 @@ public class Order {
 	}
 
 	@PostLoad
-	private void initState() {
+	private void onLoad() {
 		//if status does not match any,
 		//then state defaults to PendingState.
 		switch(this.status) {
