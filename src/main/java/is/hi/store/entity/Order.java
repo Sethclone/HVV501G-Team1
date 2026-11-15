@@ -36,7 +36,7 @@ public class Order {
     private Instant createdAt = Instant.now();
 
     public Order() {
-		state = null;
+		state = new PendingState();
 		status = OrderStatus.PENDING;
 	}
 
@@ -52,9 +52,9 @@ public class Order {
 
 	@PostLoad
 	private void initState() {
+		//if status does not match any,
+		//then state defaults to PendingState.
 		switch(this.status) {
-			case OrderStatus.PENDING:
-				this.state = new PendingState(); break;
 			case OrderStatus.CONFIRMED:
 				this.state = new ConfirmedState(); break;
 			case OrderStatus.SHIPPED:
