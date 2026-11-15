@@ -42,15 +42,17 @@ public class Order {
 
 	@Transient
 	public void transition(OrderStatus targetStatus) {
-		if(this.state == null) 
-			this.state = OrderState.fromStatus(this.status);
-
 		state.transition(this, targetStatus);
 	}
 
 	@Transient
 	public void setState(OrderState state) {
 		this.state = state;	
+	}
+
+	@PostLoad
+	private void initState() {
+		this.state = OrderState.fromStatus(this.status);
 	}
 
     public Long getId() {
