@@ -37,18 +37,13 @@ public abstract class OrderState {
 	}
 }
 
-class CancelledState extends OrderState {
-}
-
-class ConfirmedState extends OrderState {
+class PendingState extends OrderState {
 	public void transition(Order order, OrderStatus targetStatus) {
 		switch(targetStatus) {
-			case OrderStatus.SHIPPED:
-				order.setState(new ShippedState());
-				break;
+			case OrderStatus.CONFIRMED:
+				order.setState(new ConfirmedState()); break;
 			case OrderStatus.CANCELLED:
-				order.setState(new CancelledState());
-				break;
+				order.setState(new CancelledState()); break;
 			default:
 				throwInvalidTransition(order.getStatus(), targetStatus);
 		}
@@ -57,15 +52,13 @@ class ConfirmedState extends OrderState {
 	}
 }
 
-class PendingState extends OrderState {
+class ConfirmedState extends OrderState {
 	public void transition(Order order, OrderStatus targetStatus) {
 		switch(targetStatus) {
-			case OrderStatus.CONFIRMED:
-				order.setState(new ConfirmedState());
-				break;
+			case OrderStatus.SHIPPED:
+				order.setState(new ShippedState()); break;
 			case OrderStatus.CANCELLED:
-				order.setState(new CancelledState());
-				break;
+				order.setState(new CancelledState()); break;
 			default:
 				throwInvalidTransition(order.getStatus(), targetStatus);
 		}
@@ -78,12 +71,14 @@ class ShippedState extends OrderState{
 	public void transition(Order order, OrderStatus targetStatus) {
 		switch(targetStatus) {
 			case OrderStatus.CANCELLED:
-				order.setState(new CancelledState());
-				break;
+				order.setState(new CancelledState()); break;
 			default:
 				throwInvalidTransition(order.getStatus(), targetStatus);
 		}
 
 		order.setStatus(targetStatus);
 	}
+}
+
+class CancelledState extends OrderState {
 }
