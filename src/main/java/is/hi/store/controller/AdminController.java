@@ -12,6 +12,7 @@ import is.hi.store.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// UC16, UC7. Admin only, enforced in SecurityConfig (/api/admin/** requires ROLE_ADMIN), not here.
+// UC16, UC7, UC15. Admin only, enforced in SecurityConfig (/api/admin/** requires ROLE_ADMIN), not here.
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
@@ -35,6 +36,12 @@ public class AdminController {
 	@PutMapping("/users/{id}")
 	public ResponseEntity<UserSummary> updateUser(Authentication auth, @PathVariable long id, @RequestBody AdminUpdateUserRequest request) {
 		return ResponseEntity.ok(new UserSummary(userService.adminUpdateUser(auth.getName(), id, request)));
+	}
+
+	@DeleteMapping("/users/{id}")
+	public ResponseEntity<Void> deleteUser(Authentication auth, @PathVariable long id) {
+		userService.deleteUser(auth.getName(), id);
+		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("/users/{id}/reset-password")

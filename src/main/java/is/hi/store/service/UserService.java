@@ -1,5 +1,7 @@
 package is.hi.store.service;
 
+import is.hi.store.repository.OrderRepository;
+import is.hi.store.repository.StockMovementRepository;
 import is.hi.store.repository.UserRepository;
 import is.hi.store.entity.User;
 import is.hi.store.entity.User.Role;
@@ -9,12 +11,14 @@ import is.hi.store.dto.UpdateAccountRequest;
 import is.hi.store.exception.EmailAlreadyExistsException;
 import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.exception.InvalidRequestException;
+import is.hi.store.exception.UserHasOrdersException;
 import is.hi.store.exception.UserNotFoundException;
 import is.hi.store.dto.UploadProfilePicRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
@@ -37,6 +41,7 @@ public interface UserService {
 	User uploadProfilePicture(String email, UploadProfilePicRequest request);
 	User adminUpdateUser(String actorEmail, long id, AdminUpdateUserRequest request);
 	String resetPassword(long id);
+	void deleteUser(String actorEmail, long id);
 }
 
 @Service
@@ -45,6 +50,10 @@ class UserServiceImplementation implements UserService {
 	private UserRepository userRepository;
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+	@Autowired
+	private OrderRepository orderRepository;
+	@Autowired
+	private StockMovementRepository stockMovementRepository;
 
 	public boolean findExistsByRole(Role role) {
 		return userRepository.findExistsByRole(role);
@@ -132,6 +141,24 @@ class UserServiceImplementation implements UserService {
 		user.setMustChangePassword(true);
 		userRepository.save(user);
 		return temporaryPassword;
+	}
+
+	// UC15. Hard delete. Same lockout guards as UC7, owned orders must be reassigned (UC19) first.
+	// The user's existing tokens stop working on the next request (JwtAuthenticationFilter finds no user).
+	@Transactional
+	public void deleteUser(String actorEmail, long id) {
+		User user = findUser(id);
+		if (user.getEmail().equals(actorEmail)) {
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("id", "Admins cannot delete themselves")));
+		}
+		if (user.getRole() == Role.ADMIN && userRepository.countByRole(Role.ADMIN) <= 1) {
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("id", "Cannot delete the last admin")));
+		}
+		if (orderRepository.existsByUser(user)) {
+			throw new UserHasOrdersException(id);
+		}
+		stockMovementRepository.clearPerformedBy(user);
+		userRepository.delete(user);
 	}
 
 	private static final SecureRandom RANDOM = new SecureRandom();
