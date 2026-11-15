@@ -9,7 +9,9 @@ import java.util.*;
 
 public abstract class OrderState {
 
-	public abstract void transition(Order order, OrderStatus targetStatus);
+	public void transition(Order order, OrderStatus targetStatus) {
+		throwInvalidTransition(order.getStatus(), targetStatus);
+	}
 
 	protected void throwInvalidTransition(OrderStatus currentStatus, OrderStatus targetStatus) {
 		String errorMessage = 
@@ -32,5 +34,56 @@ public abstract class OrderState {
 			default:
 				return null;
 		}
+	}
+}
+
+class CancelledState extends OrderState {
+}
+
+class ConfirmedState extends OrderState {
+	public void transition(Order order, OrderStatus targetStatus) {
+		switch(targetStatus) {
+			case OrderStatus.SHIPPED:
+				order.setState(new ShippedState());
+				break;
+			case OrderStatus.CANCELLED:
+				order.setState(new CancelledState());
+				break;
+			default:
+				throwInvalidTransition(order.getStatus(), targetStatus);
+		}
+
+		order.setStatus(targetStatus);
+	}
+}
+
+class PendingState extends OrderState {
+	public void transition(Order order, OrderStatus targetStatus) {
+		switch(targetStatus) {
+			case OrderStatus.CONFIRMED:
+				order.setState(new ConfirmedState());
+				break;
+			case OrderStatus.CANCELLED:
+				order.setState(new CancelledState());
+				break;
+			default:
+				throwInvalidTransition(order.getStatus(), targetStatus);
+		}
+
+		order.setStatus(targetStatus);
+	}
+}
+
+class ShippedState extends OrderState{
+	public void transition(Order order, OrderStatus targetStatus) {
+		switch(targetStatus) {
+			case OrderStatus.CANCELLED:
+				order.setState(new CancelledState());
+				break;
+			default:
+				throwInvalidTransition(order.getStatus(), targetStatus);
+		}
+
+		order.setStatus(targetStatus);
 	}
 }
