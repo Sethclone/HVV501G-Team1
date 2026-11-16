@@ -56,11 +56,11 @@ public class Order {
 		//then state defaults to PendingState.
 		switch(this.status) {
 			case OrderStatus.CONFIRMED:
-				this.state = new ConfirmedState(); break;
+				setState(new ConfirmedState()); break;
 			case OrderStatus.SHIPPED:
-				this.state = new ShippedState(); break;
+				setState(new ShippedState()); break;
 			case OrderStatus.CANCELLED:
-				this.state = new CancelledState();
+				setState(new CancelledState());
 		}
 	}
 
