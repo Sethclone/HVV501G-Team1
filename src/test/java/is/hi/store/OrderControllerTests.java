@@ -199,18 +199,14 @@ class OrderControllerTests {
 	void NonExistentProductIs404() throws Exception {
 		String token = staffToken("order-ne@example.com");
 
-		Product product = new Product();
-		product.setName("Widget");
-		product.setStockQuantity(5);
-		product.setPrice(new BigDecimal(200));
+		Product product = productWithStock(10, 200);
 
 		List<OrderItemRequest> items = List.of(
-			new OrderItemRequest(product.getId(),2) 
+			new OrderItemRequest(product.getId()+2000,2) 
 		);
 
 		createOrder(token, "{\"items\":"+items+"}")
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.fieldErrors[0].field").value("productId"));
+			.andExpect(status().isNotFound());
 	}
 
 	// UC12 and UC17
