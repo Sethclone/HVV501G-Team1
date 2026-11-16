@@ -314,6 +314,9 @@ class OrderControllerTests {
 
 		removeItem(token, orderId, orderItemId)
 			.andExpect(status().isOk());
+
+		product = productRepository.findById(product.getId()).orElse(null);
+		assertEquals(5, product.getStockQuantity());
 	}
 
 	@Test
