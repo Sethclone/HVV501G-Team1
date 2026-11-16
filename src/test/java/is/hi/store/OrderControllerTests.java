@@ -316,8 +316,9 @@ class OrderControllerTests {
 			.andExpect(status().isOk());
 	}
 
+	@Test
 	void removeItemNotPending() throws Exception {
-		String token = staffToken("remove-item-success@example.com");
+		String token = staffToken("remove-item-np@example.com");
 		Product product = productWithStock(5,100);
 		List<OrderItemRequest> items = List.of(
 			new OrderItemRequest(product.getId(),2) 
@@ -329,7 +330,7 @@ class OrderControllerTests {
 		long orderId = getOrderIdFromResponse(response);
 		long orderItemId = getOrderItemIdFromResponse(response,0);
 
-		updateStatus(token, orderId, "{\"status\":\"CONFIRMED\"}")
+		updateStatus(token, orderId, "CONFIRMED")
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("CONFIRMED"));
 		removeItem(token, orderId, 0)
