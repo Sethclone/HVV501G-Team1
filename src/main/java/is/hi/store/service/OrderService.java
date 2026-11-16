@@ -1,6 +1,7 @@
 package is.hi.store.service;
 
 import is.hi.store.dto.CreateOrderRequest;
+import is.hi.store.dto.UpdateOrderStatusRequest;
 import is.hi.store.dto.FieldErrorDetail;
 import is.hi.store.dto.OrderItemRequest;
 import is.hi.store.dto.OrderItemResponse;
@@ -11,6 +12,7 @@ import is.hi.store.entity.Order.OrderStatus;
 import is.hi.store.entity.OrderItem;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
+import is.hi.store.entity.User.Role;
 import is.hi.store.exception.OrderNotFoundException;
 import is.hi.store.exception.ResourceNotFoundException;
 import is.hi.store.exception.InvalidCredentialsException;
@@ -37,6 +39,8 @@ public interface OrderService {
 	OrderResponse removeItem(Long orderId, Long itemId);
     OrderResponse getOrderById(Long id);
     PagedResponse<OrderResponse> getOrders(String status, int page, int size);
+	OrderResponse updateOrderStatus(Long id, UpdateOrderStatusRequest request);
+	void deleteOrder(Long id);
 }
 
 @Service
@@ -238,4 +242,68 @@ class OrderServiceImplementation implements OrderService {
         return new PagedResponse<>(content, result.getNumber(), result.getSize(),
                 result.getTotalElements(), result.getTotalPages());
     }
+
+	@Transactional
+	public OrderResponse updateOrderStatus(
+		Long id,
+		UpdateOrderStatusRequest request
+	) {
+		Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+
+		if(request == null || request.getStatus() == null) 
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Request must contain status")));
+
+		OrderStatus currentStatus = order.getStatus();
+		OrderStatus targetStatus = request.getStatus();
+
+        List<FieldErrorDetail> errors = new ArrayList<>();
+
+		String illegalTransitionMessage = 
+		"Order status transition illegal: " +
+		currentStatus + " to " + targetStatus;
+
+		FieldErrorDetail illegalTransitionDetail = new FieldErrorDetail("status", illegalTransitionMessage);
+
+		if(currentStatus == targetStatus) 
+            errors.add(illegalTransitionDetail);
+		else if(currentStatus == OrderStatus.PENDING && targetStatus == OrderStatus.SHIPPED)
+            errors.add(illegalTransitionDetail);
+		else if(currentStatus == OrderStatus.CONFIRMED && targetStatus == OrderStatus.PENDING)
+            errors.add(illegalTransitionDetail);
+		else if(currentStatus == OrderStatus.SHIPPED && targetStatus == OrderStatus.PENDING)
+            errors.add(illegalTransitionDetail);
+		else if(currentStatus == OrderStatus.SHIPPED && targetStatus == OrderStatus.CONFIRMED)
+            errors.add(illegalTransitionDetail);
+		else if(currentStatus == OrderStatus.CANCELLED)
+            errors.add(illegalTransitionDetail);
+
+		if(!errors.isEmpty())
+            throw new InvalidRequestException(errors);
+
+		order.setStatus(targetStatus);
+		if(targetStatus != OrderStatus.CANCELLED) {
+			orderRepository.save(order);
+			return new OrderResponse(order);
+		}
+
+		List<OrderItem> items = order.getItems();
+		List<Product> products = new ArrayList<>();
+		for(OrderItem item : items) {
+			Product product = item.getProduct();
+			product.setStockQuantity(product.getStockQuantity()+item.getQuantity());
+			products.add(product);
+		}
+
+		productRepository.saveAll(products);
+		orderRepository.save(order);
+		return new OrderResponse(order);
+	}
+
+	@Transactional
+	public void deleteOrder(Long id) {	
+		Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+		if(order.getStatus() != OrderStatus.CANCELLED)
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Only cancelled orders can be deleted")));
+		orderRepository.delete(order);
+	}
 }
