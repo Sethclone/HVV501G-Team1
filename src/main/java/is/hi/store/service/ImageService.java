@@ -39,8 +39,8 @@ class ImageServiceImplementation implements ImageService {
     public ImageServiceImplementation() {}
 
     public Resource getImageByFilename(String fileName){
-		if(fileName.contains("/../") || fileName.startsWith("..")) {
-			throw new InvalidRequestException(List.of(new FieldErrorDetail("fileName", "illegal resource identifier")));	
+		if(fileName.contains("/")) {
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("fileName", "Not a valid filename")));	
 		}
 
 		Path path = Paths.get("uploads/").resolve(fileName);
