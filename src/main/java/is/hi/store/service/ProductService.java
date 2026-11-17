@@ -10,6 +10,7 @@ import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.repository.ProductRepository;
 import is.hi.store.repository.UserRepository;
 import is.hi.store.repository.StockMovementRepository;
+import is.hi.store.util.ImageStorage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -113,35 +114,24 @@ class ProductServiceImplementation implements ProductService {
             request.getStockQuantity()
         );
 
-        String imageUrl = null;
-        MultipartFile file = request.getImage();
+		String imageUrl = null;
+		MultipartFile file = request.getImage();
+		try {
+			imageUrl = ImageStorage.save(file);
+		} catch (IOException e) {
+			throw new RuntimeException(e.getMessage());
+		}
 
-        if (file != null) {
-            try {
-                LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-                String timestamp = now.format(formatter);
-                String fileName = timestamp + "_" + file.getOriginalFilename();
-                Path filePath = Paths.get(uploadDirectory).resolve(fileName);
+		Product product = new Product();
+		product.setName(request.getName());
+		product.setCategory(request.getCategory());
+		product.setPrice(request.getPrice());
+		// Default to 0, a null stock would crash stock movements (UC1) with a 500.
+		product.setStockQuantity(request.getStockQuantity() == null ? 0 : request.getStockQuantity());
+		product.setImageUrl(imageUrl);
 
-                Files.copy(file.getInputStream(), filePath);
-                imageUrl = "/images/" + fileName;
-            } catch (IOException e) {
-                throw new RuntimeException("you sleaze failed", e);
-            }
-        }
-
-        Product product = new Product();
-        product.setName(request.getName());
-        product.setCategory(request.getCategory());
-        product.setPrice(request.getPrice());
-        // Default to 0, a null stock would crash stock movements (UC1) with a 500.
-        product.setStockQuantity(request.getStockQuantity() == null ? 0 : request.getStockQuantity());
-        product.setImageUrl(imageUrl);
-
-        Product savedProduct = productRepository.save(product);
-
-        return mapToResponse(savedProduct);
+		Product savedProduct = productRepository.save(product);
+		return mapToResponse(savedProduct);
     }
 
 	public ProductResponse flagProduct(long id, Boolean flag) {
