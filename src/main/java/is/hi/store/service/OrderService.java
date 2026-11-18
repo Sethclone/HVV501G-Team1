@@ -279,8 +279,8 @@ class OrderServiceImplementation implements OrderService {
 	@Transactional
 	public void deleteOrder(Long id) {	
 		Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
-		if(order.getStatus() != OrderStatus.CANCELLED)
-			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Only cancelled orders can be deleted")));
+		if(order.getStatus() == OrderStatus.PENDING || order.getStatus() == OrderStatus.CONFIRMED)
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Orders can only be deleted if they are CANCELLED or SHIPPED")));
 		orderRepository.delete(order);
 	}
 }

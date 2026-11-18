@@ -13,4 +13,7 @@ public interface StockMovementRepository extends Repository<StockMovement, Long>
 	@Modifying
 	@Query("update StockMovement s set s.performedBy = null where s.performedBy = ?1")
 	void clearPerformedBy(User user);
+	@Modifying
+	@Query("update StockMovement s set s.product = null where s.product = ?1")
+	void clearProduct(Product product);
 }

@@ -170,6 +170,11 @@ class ProductServiceImplementation implements ProductService {
     @Transactional
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+
+		if(orderItemRepository.existsByProduct(product)) {
+			throw new OrderHasProductReferenceException();
+		}
+		stockMovementRepository.clearProduct(product);
         productRepository.delete(product);
     }
 
