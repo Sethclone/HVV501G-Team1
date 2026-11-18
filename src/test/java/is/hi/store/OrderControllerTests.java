@@ -6,10 +6,12 @@ import is.hi.store.dto.OrderItemRequest;
 import is.hi.store.dto.OrderResponse;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.Order;
+import is.hi.store.entity.User;
 import is.hi.store.entity.User.Role;
 import is.hi.store.entity.Order.OrderStatus;
 import is.hi.store.repository.OrderRepository;
 import is.hi.store.repository.ProductRepository;
+import is.hi.store.repository.UserRepository;
 import is.hi.store.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,6 +46,8 @@ class OrderControllerTests {
 	private OrderRepository orderRepository;
 	@Autowired
 	private ProductRepository productRepository;
+	@Autowired
+	private UserRepository userRepository;
 
 	private String rootToken() throws Exception {
 		return login("root@example.com", "password");
@@ -71,6 +76,16 @@ class OrderControllerTests {
 		product.setStockQuantity(stock);
 		product.setPrice(new BigDecimal(price));
 		return productRepository.save(product);
+	}
+
+	private org.springframework.test.web.servlet.ResultActions register(String token, String email, String password) throws Exception {
+		return mvc.perform(post("/api/auth/register").header("Authorization", "Bearer "+token).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"username\":\"Test\",\"email\":\"" + email + "\",\"password\":\"" + password + "\"}"));
+	}
+	
+	private org.springframework.test.web.servlet.ResultActions reassignUser(String token, Long orderId, Long newUserId) throws Exception {
+		return mvc.perform(put("/api/orders/"+orderId+"/user").header("Authorization", "Bearer "+token).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"userId\":"+newUserId+"}"));
 	}
 
 	private org.springframework.test.web.servlet.ResultActions createOrder(String token, String json) throws Exception {
@@ -395,5 +410,51 @@ class OrderControllerTests {
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.fieldErrors[0].field").value("status"));
 	}
+
+	//UC19
+	@Test
+	void reassignUserSuccess() throws Exception {
+		String token = rootToken();
+		Product product = productWithStock(5,100);
+
+		List<OrderItemRequest> items = List.of(
+			new OrderItemRequest(product.getId(),2) 
+		);
+		long id = createOrderAndReturnId(token, "{\"items\":"+items+"}");
+
+		register(token, "test-user@example.com", "password1")
+			.andExpect(status().isCreated());
+		User newUser = userRepository.findByEmail("test-user@example.com").orElse(null);
+		reassignUser(token, id, newUser.getId())
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.userId").value(newUser.getId()));
+	}
+
+	@Test
+	void reassignUserDoesNotExist() throws Exception {
+		String token = rootToken();
+		Product product = productWithStock(5,100);
+
+		List<OrderItemRequest> items = List.of(
+			new OrderItemRequest(product.getId(),2) 
+		);
+		long id = createOrderAndReturnId(token, "{\"items\":"+items+"}");
+
+		reassignUser(token, id, 999999999L)
+			.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void reassignOrderDoesNotExist() throws Exception {
+		String token = rootToken();
+
+		register(token, "test-user2@example.com", "password1")
+			.andExpect(status().isCreated());
+		User newUser = userRepository.findByEmail("test-user@example.com").orElse(null);
+
+		reassignUser(token, 9999999999L, newUser.getId())
+			.andExpect(status().isNotFound());
+	}
+
 	
 }
