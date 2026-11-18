@@ -21,7 +21,7 @@ The missing order-status transition endpoint from Sprint 3 is also in scope as a
 | **A** | Status transition endpoint + Remove Order (with stock restoration) | UC13 + supporting | Aron | ~14h |
 | **B** | Admin Deletes Account | UC15 | Unnar | ~8h |
 | **C** | Reassign Order | UC19 | Open | ~8h |
-| **D** | Modify order | UC14 | Open | ~10h |
+| **D** | Modify order | UC14 | Siggi | ~10h |
 
 ### Additional required features not in original plan
 
