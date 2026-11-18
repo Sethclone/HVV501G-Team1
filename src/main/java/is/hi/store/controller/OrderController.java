@@ -62,6 +62,16 @@ public class OrderController {
 		OrderResponse response = orderService.updateOrderStatus(id, request);
 		return ResponseEntity.ok(response);
 	}
+
+  @PutMapping("/{id}")
+  public ResponseEntity<OrderResponse> updateOrder(
+          @PathVariable Long id,
+          @RequestBody UpdateOrderRequest request
+  ) {
+      OrderResponse response = orderService.updateOrder(id, request);
+      return ResponseEntity.ok(response);
+  }
+  
 	@PutMapping("/{id}/user")
 	public ResponseEntity<OrderResponse> reassignOrder(
 			@PathVariable Long id,
