@@ -28,6 +28,8 @@ import java.util.*;
 import java.math.BigDecimal;
 
 // UC1 - POST /api/products/{id}/stock-movements, UC9 - PATCH /api/products/{id}/reorder-flag
+// UC10 - DELETE/PATCH /api/products/{id}, UC8 GET /api/products/{id}
+// UC3 - GET /api/products?category=&minPrice=&maxPrice=
 @SpringBootTest
 @AutoConfigureMockMvc
 class ProductControllerTests {
@@ -106,8 +108,14 @@ class ProductControllerTests {
 		return mvc.perform(patch("/api/products/" + productId + "/reorder-flag").header("Authorization", "Bearer " + token)
 			.contentType(MediaType.APPLICATION_JSON).content(json));
 	}
+
 	private org.springframework.test.web.servlet.ResultActions viewProduct(String token, long productId) throws Exception {
 		return mvc.perform(get("/api/products/" + productId).header("Authorization", "Bearer " + token));
+	}
+
+	private org.springframework.test.web.servlet.ResultActions updateProduct(String token, long productId, String json) throws Exception {
+		return mvc.perform(patch("/api/products/" + productId).header("Authorization", "Bearer " + token)
+			.contentType(MediaType.APPLICATION_JSON).content(json));
 	}
 
 	private org.springframework.test.web.servlet.ResultActions filterProducts(String token, String category, int minPrice, int maxPrice) throws Exception {
@@ -266,6 +274,20 @@ class ProductControllerTests {
 		createOrder(token, "{\"items\":"+items+"}");
 		deleteProduct(token,product.getId())
 			.andExpect(status().isConflict());
+	}
+
+	@Test
+	void updateProductSuccess() throws Exception {
+		String token = staffToken("update-product-success@example.com");
+
+		Product product = fullProduct("Shoe", "Clothing", 100, 200);
+
+		updateProduct(token, product.getId(), "{\"category\":\"Food\", \"name\":\"Pickle\", \"price\":10}")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("Pickle"))
+			.andExpect(jsonPath("$.category").value("Food"))
+			.andExpect(jsonPath("$.stockQuantity").value(100))
+			.andExpect(jsonPath("$.price").value(10));
 	}
 
 	//UC3
