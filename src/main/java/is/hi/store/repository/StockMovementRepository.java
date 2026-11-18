@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import is.hi.store.entity.StockMovement;
 import is.hi.store.entity.StockMovement.MovementType;
 import is.hi.store.entity.User;
+import is.hi.store.entity.Product;
 import java.util.Optional;
 
 public interface StockMovementRepository extends Repository<StockMovement, Long>{
