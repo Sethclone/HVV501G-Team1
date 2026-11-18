@@ -24,6 +24,11 @@ public class ApiExceptionHandler {
 		return build(HttpStatus.CONFLICT, ex.getMessage(), request);
 	}
 
+	@ExceptionHandler(UserHasOrdersException.class)
+	public ResponseEntity<ErrorResponse> handleUserHasOrders(UserHasOrdersException ex, HttpServletRequest request) {
+		return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+	}
+
 	@ExceptionHandler(InvalidRequestException.class)
 	public ResponseEntity<ErrorResponse> handleInvalidRequest(InvalidRequestException ex, HttpServletRequest request) {
 		ResponseEntity<ErrorResponse> response = build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);

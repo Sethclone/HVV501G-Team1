@@ -13,4 +13,5 @@ public interface UserRepository extends Repository<User, Long> {
 	boolean findExistsByRole(Role role);
 	long countByRole(Role role);
 	Optional<User> findByEmail(String email);
+	void delete(User user);
 }

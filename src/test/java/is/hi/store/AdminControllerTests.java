@@ -2,7 +2,12 @@ package is.hi.store;
 
 import com.jayway.jsonpath.JsonPath;
 import is.hi.store.dto.RegisterRequest;
+import is.hi.store.entity.Order;
+import is.hi.store.entity.StockMovement;
 import is.hi.store.entity.User.Role;
+import is.hi.store.repository.OrderRepository;
+import is.hi.store.repository.StockMovementRepository;
+import is.hi.store.repository.UserRepository;
 import is.hi.store.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -19,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // UC7: PUT /api/admin/users/{id}, POST /api/admin/users/{id}/reset-password
+// UC15: DELETE /api/admin/users/{id}
 @SpringBootTest
 @AutoConfigureMockMvc
 class AdminControllerTests {
@@ -27,6 +34,12 @@ class AdminControllerTests {
 	private MockMvc mvc;
 	@Autowired
 	private AuthService authService;
+	@Autowired
+	private UserRepository userRepository;
+	@Autowired
+	private OrderRepository orderRepository;
+	@Autowired
+	private StockMovementRepository stockMovementRepository;
 
 	// Seeded on startup by AuthController's CommandLineRunner.
 	private String rootToken() throws Exception {
@@ -54,6 +67,10 @@ class AdminControllerTests {
 		return mvc.perform(post("/api/admin/users/" + id + "/reset-password").header("Authorization", "Bearer " + token));
 	}
 
+	private ResultActions deleteUser(String token, long id) throws Exception {
+		return mvc.perform(delete("/api/admin/users/" + id).header("Authorization", "Bearer " + token));
+	}
+
 	private ResultActions listOrders(String token) throws Exception {
 		return mvc.perform(get("/api/orders").header("Authorization", "Bearer " + token));
 	}
@@ -73,12 +90,14 @@ class AdminControllerTests {
 		long id = staff("a-forbidden@example.com");
 		update(login("a-forbidden@example.com", "oldpassword"), id, "{\"role\":\"ADMIN\"}")
 			.andExpect(status().isForbidden());
+		deleteUser(login("a-forbidden@example.com", "oldpassword"), id).andExpect(status().isForbidden());
 	}
 
 	@Test
 	void unknownUserIs404() throws Exception {
 		update(rootToken(), 999999, "{\"name\":\"x\"}").andExpect(status().isNotFound());
 		resetPassword(rootToken(), 999999).andExpect(status().isNotFound());
+		deleteUser(rootToken(), 999999).andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -166,6 +185,45 @@ class AdminControllerTests {
 			.andExpect(jsonPath("$.email").value("a-new-admin@example.com"))
 			.andExpect(jsonPath("$.role").value("ADMIN"));
 		login("a-new-admin@example.com", "adminpassword");
+	}
+
+	@Test
+	void deletedUserLosesAccess() throws Exception {
+		long id = staff("a-delete@example.com");
+		String token = login("a-delete@example.com", "oldpassword");
+		deleteUser(rootToken(), id).andExpect(status().isNoContent());
+		listOrders(token).andExpect(status().isUnauthorized());
+		deleteUser(rootToken(), id).andExpect(status().isNotFound());
+	}
+
+	@Test
+	void adminCannotDeleteSelf() throws Exception {
+		String body = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"email\":\"root@example.com\",\"password\":\"password\"}"))
+			.andReturn().getResponse().getContentAsString();
+		long rootId = ((Number) JsonPath.read(body, "$.user.id")).longValue();
+		deleteUser(JsonPath.read(body, "$.token"), rootId)
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fieldErrors[0].field").value("id"));
+	}
+
+	@Test
+	void userWithOrdersIs409() throws Exception {
+		long id = staff("a-has-orders@example.com");
+		Order order = new Order();
+		order.setUser(userRepository.findById(id));
+		orderRepository.save(order);
+		deleteUser(rootToken(), id).andExpect(status().isConflict());
+	}
+
+	@Test
+	void deleteKeepsStockMovements() throws Exception {
+		long id = staff("a-movements@example.com");
+		StockMovement movement = new StockMovement();
+		movement.setPerformedBy(userRepository.findById(id));
+		stockMovementRepository.save(movement);
+		// Without clearing performedBy the foreign key would fail the delete.
+		deleteUser(rootToken(), id).andExpect(status().isNoContent());
 	}
 
 	@Test
