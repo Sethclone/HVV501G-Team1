@@ -1,9 +1,6 @@
 package is.hi.store.controller;
 
-import is.hi.store.dto.CreateOrderRequest;
-import is.hi.store.dto.UpdateOrderStatusRequest;
-import is.hi.store.dto.OrderResponse;
-import is.hi.store.dto.PagedResponse;
+import is.hi.store.dto.*;
 import is.hi.store.service.OrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -65,4 +62,13 @@ public class OrderController {
 		OrderResponse response = orderService.updateOrderStatus(id, request);
 		return ResponseEntity.ok(response);
 	}
+
+    @PutMapping("/{id}")
+    public ResponseEntity<OrderResponse> updateOrder(
+            @PathVariable Long id,
+            @RequestBody UpdateOrderRequest request
+    ) {
+        OrderResponse response = orderService.updateOrder(id, request);
+        return ResponseEntity.ok(response);
+    }
 }

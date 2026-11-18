@@ -1,5 +1,6 @@
 package is.hi.store.service;
 
+import is.hi.store.dto.UpdateOrderRequest;
 import is.hi.store.dto.CreateOrderRequest;
 import is.hi.store.dto.UpdateOrderStatusRequest;
 import is.hi.store.dto.FieldErrorDetail;
@@ -40,6 +41,7 @@ public interface OrderService {
     OrderResponse getOrderById(Long id);
     PagedResponse<OrderResponse> getOrders(String status, int page, int size);
 	OrderResponse updateOrderStatus(Long id, UpdateOrderStatusRequest request);
+    OrderResponse updateOrder(Long id, UpdateOrderRequest request);
 	void deleteOrder(Long id);
 }
 
@@ -64,50 +66,10 @@ class OrderServiceImplementation implements OrderService {
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new InvalidCredentialsException("Account no longer exists"));
 
-        List<FieldErrorDetail> errors = new ArrayList<>();
-        if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
-            errors.add(new FieldErrorDetail("items", "Order must contain at least one item"));
-            throw new InvalidRequestException(errors);
-        }
-
-        for (OrderItemRequest itemRequest : request.getItems()) {
-            if (itemRequest == null || itemRequest.getProductId() == null) {
-                errors.add(new FieldErrorDetail("productId", "Product id must not be null"));
-            }
-            if (itemRequest == null || itemRequest.getQuantity() == null || itemRequest.getQuantity() <= 0) {
-                errors.add(new FieldErrorDetail("quantity", "Quantity must be greater than zero"));
-            }
-        }
-
-        if (!errors.isEmpty()) {
-            throw new InvalidRequestException(errors);
-        }
+        validateItems(request == null ? null : request.getItems());
 
         Map<Long, Product> productsById = new HashMap<>();
-        Map<Long, Integer> requestedQuantities = new HashMap<>();
-
-        for (OrderItemRequest itemRequest : request.getItems()) {
-            Long productId = itemRequest.getProductId();
-            Product product = productsById.get(productId);
-            if (product == null) {
-                product = productRepository.findById(productId)
-                    .orElseThrow(() -> new ProductNotFoundException(productId));
-                productsById.put(productId, product);
-            }
-            int currentRequested = requestedQuantities.getOrDefault(productId, 0);
-            requestedQuantities.put(productId, currentRequested + itemRequest.getQuantity());
-        }
-
-        for (Map.Entry<Long, Integer> entry : requestedQuantities.entrySet()) {
-            Product product = productsById.get(entry.getKey());
-            if (product.getStockQuantity() < entry.getValue()) {
-                errors.add(new FieldErrorDetail("quantity", "Insufficient stock for product: " + product.getName()));
-            }
-        }
-
-        if (!errors.isEmpty()) {
-            throw new InvalidRequestException(errors);
-        }
+        loadAndVerifyStock(request.getItems(), productsById);
 
         Order order = new Order();
         order.setUser(user);
@@ -283,4 +245,93 @@ class OrderServiceImplementation implements OrderService {
 			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Only cancelled orders can be deleted")));
 		orderRepository.delete(order);
 	}
+
+    @Transactional
+    public OrderResponse updateOrder(Long id, UpdateOrderRequest request) {
+        Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Only pending orders can be updated")));
+        }
+
+        validateItems(request == null ? null : request.getItems());
+
+        // Put old items' stock back first so editing an item already on the order checks against true available stock.
+        Map<Long, Product> productsById = new HashMap<>();
+        for (OrderItem oldItem : order.getItems()) {
+            Product product = oldItem.getProduct();
+            product.setStockQuantity(product.getStockQuantity() + oldItem.getQuantity());
+            productsById.put(product.getId(), product);
+        }
+
+        loadAndVerifyStock(request.getItems(), productsById);
+
+        order.getItems().clear();
+        BigDecimal totalPrice = BigDecimal.ZERO;
+
+        for (OrderItemRequest itemRequest : request.getItems()) {
+            Product product = productsById.get(itemRequest.getProductId());
+            product.setStockQuantity(product.getStockQuantity() - itemRequest.getQuantity());
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setProduct(product);
+            orderItem.setQuantity(itemRequest.getQuantity());
+            orderItem.setUnitPrice(product.getPrice());
+            order.getItems().add(orderItem);
+
+            totalPrice = totalPrice.add(product.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity())));
+        }
+
+        productRepository.saveAll(productsById.values());
+        order.setTotalPrice(totalPrice);
+
+        Order savedOrder = orderRepository.save(order);
+        return mapToResponse(savedOrder);
+    }
+
+    private void validateItems(List<OrderItemRequest> items) {
+        List<FieldErrorDetail> errors = new ArrayList<>();
+        if (items == null || items.isEmpty()) {
+            errors.add(new FieldErrorDetail("items", "Order must contain at least one item"));
+            throw new InvalidRequestException(errors);
+        }
+
+        for (OrderItemRequest itemRequest : items) {
+            if (itemRequest == null || itemRequest.getProductId() == null) {
+                errors.add(new FieldErrorDetail("productId", "Product id must not be null"));
+            }
+            if (itemRequest == null || itemRequest.getQuantity() == null || itemRequest.getQuantity() <= 0) {
+                errors.add(new FieldErrorDetail("quantity", "Quantity must be greater than zero"));
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new InvalidRequestException(errors);
+        }
+    }
+
+    private void loadAndVerifyStock(List<OrderItemRequest> items, Map<Long, Product> productsById) {
+        Map<Long, Integer> requestedQuantities = new HashMap<>();
+        for (OrderItemRequest itemRequest : items) {
+            Long productId = itemRequest.getProductId();
+            if (!productsById.containsKey(productId)) {
+                Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new ProductNotFoundException(productId));
+                productsById.put(productId, product);
+            }
+            requestedQuantities.merge(productId, itemRequest.getQuantity(), Integer::sum);
+        }
+
+        List<FieldErrorDetail> errors = new ArrayList<>();
+        for (Map.Entry<Long, Integer> entry : requestedQuantities.entrySet()) {
+            Product product = productsById.get(entry.getKey());
+            if (product.getStockQuantity() < entry.getValue()) {
+                errors.add(new FieldErrorDetail("quantity", "Insufficient stock for product: " + product.getName()));
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new InvalidRequestException(errors);
+        }
+    }
 }
