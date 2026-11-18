@@ -40,7 +40,7 @@ class ImageServiceImplementation implements ImageService {
   
     public ImageServiceImplementation() {}
 
-    public Resource getImageByFilename(String fileName) throws MalformedURLException{
+    public Resource getImageByFilename(String fileName) {
 		if(fileName.contains("/")) {
 			throw new InvalidRequestException(List.of(new FieldErrorDetail("fileName", "Not a valid filename")));	
 		}
