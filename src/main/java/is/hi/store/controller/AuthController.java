@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 
 import java.time.Instant;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -28,6 +29,7 @@ public class AuthController {
 	private final AuthService authService;
 	private final JwtService jwtService;
 	private final UserService userService;
+	private final Map<String, String> env = System.getenv();
 
 	public AuthController(AuthService authService, JwtService jwtService, UserService userService) {
 		this.authService = authService;
@@ -56,7 +58,7 @@ public class AuthController {
 	public CommandLineRunner commandLineRunner() {
 		return args -> {
 			if(!userService.findExistsByRole(Role.ADMIN))
-				authService.register(new RegisterRequest("root", "root@example.com", "password"), Role.ADMIN);
+				authService.register(new RegisterRequest("root", "root@example.com", env.get("ROOT_PASSWORD")), Role.ADMIN);
 		};
 	}
 }
