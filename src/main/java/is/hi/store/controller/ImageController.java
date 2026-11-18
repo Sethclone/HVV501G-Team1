@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 
 import java.util.*;
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
 
 @RestController
 @RequestMapping("/api/images")
@@ -22,7 +23,7 @@ public class ImageController {
     }
 
     @GetMapping("/{fileName}")
-    public ResponseEntity<Resource> getProductById(@PathVariable String fileName) {
+    public ResponseEntity<Resource> getImageByFilename(@PathVariable String fileName) {
        	Resource resource = imageService.getImageByFilename(fileName);
 		int dotIndex = resource.getFilename().lastIndexOf(".");
         return ResponseEntity.ok()
