@@ -32,7 +32,7 @@ import java.util.*;
 import java.io.*;
 
 public interface ImageService {
-    Resource getImageByFilename(String fileName) throws MalformedURLException;
+    Resource getImageByFilename(String fileName);
 }
 
 @Service
@@ -50,7 +50,11 @@ class ImageServiceImplementation implements ImageService {
 			throw new ImageNotFoundException(fileName);
 		
 		Resource resource = null;
-		resource = new UrlResource(path.toUri());	
+		try {
+			resource = new UrlResource(path.toUri());
+		} catch (MalformedURLException e) {	
+			throw new ImageNotFoundException(fileName);
+		}
 
         return resource;
     }

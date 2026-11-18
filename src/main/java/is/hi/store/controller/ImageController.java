@@ -23,7 +23,7 @@ public class ImageController {
     }
 
     @GetMapping("/{fileName}")
-    public ResponseEntity<Resource> getImageByFilename(@PathVariable String fileName) throws MalformedURLException {
+    public ResponseEntity<Resource> getImageByFilename(@PathVariable String fileName) {
        	Resource resource = imageService.getImageByFilename(fileName);
 		int dotIndex = resource.getFilename().lastIndexOf(".");
         return ResponseEntity.ok()
