@@ -1,0 +1,234 @@
+@baseUrl = http://localhost:8090
+
+# Sprint 4 demo: one order from start to finish (UC13, UC15, UC19, status flow, State pattern).
+# Restart the app first (H2 is in memory), then send the requests top to bottom,
+# later requests reuse tokens and ids from earlier ones.
+# Run SETUP before the presentation starts, the live demo begins at DEMO 1.
+
+############################################################
+# SETUP (run before presenting)
+############################################################
+
+### S1. Log in as the seeded admin
+# @name admin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "root@example.com",
+  "password": "password"
+}
+
+### S2. Admin registers a staff member
+# @name jon
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+Authorization: Bearer {{admin.response.body.$.token}}
+
+{
+  "username": "Jon Staff",
+  "email": "jon@example.com",
+  "password": "secret123"
+}
+
+### S3. Log in as the staff member
+# @name staff
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "jon@example.com",
+  "password": "secret123"
+}
+
+### S4. Create a product with stock 10 (UC2 is multipart/form, so no JSON here)
+# @name milk
+POST {{baseUrl}}/api/products
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=Milk&category=Dairy&price=299&stockQuantity=10
+
+############################################################
+# DEMO 1: Staff creates two orders (UC11)
+############################################################
+
+### 1.1 Order A, 3 Milk, expect 201 and status PENDING
+# @name orderA
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": {{milk.response.body.$.id}}, "quantity": 3 }
+  ]
+}
+
+### 1.2 Order B, 3 Milk, Jon keeps this one (it blocks his deletion in DEMO 4)
+# @name orderB
+POST {{baseUrl}}/api/orders
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "items": [
+    { "productId": {{milk.response.body.$.id}}, "quantity": 3 }
+  ]
+}
+
+### 1.3 Stock was deducted, Milk 10 -> 4
+GET {{baseUrl}}/api/products/{{milk.response.body.$.id}}
+Authorization: Bearer {{staff.response.body.$.token}}
+
+############################################################
+# DEMO 2: Order status flow (State pattern)
+############################################################
+
+### 2.1 PENDING -> CONFIRMED, allowed, expect 200
+PATCH {{baseUrl}}/api/orders/{{orderA.response.body.$.id}}/status
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "status": "CONFIRMED"
+}
+
+### 2.2 CONFIRMED -> PENDING, ConfirmedState rejects it, expect 400 on status
+PATCH {{baseUrl}}/api/orders/{{orderA.response.body.$.id}}/status
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "status": "PENDING"
+}
+
+### 2.3 CONFIRMED -> CANCELLED, allowed, stock is returned
+PATCH {{baseUrl}}/api/orders/{{orderA.response.body.$.id}}/status
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "status": "CANCELLED"
+}
+
+### 2.4 Stock was restored, Milk 4 -> 7 (decision #3)
+GET {{baseUrl}}/api/products/{{milk.response.body.$.id}}
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 2.5 CANCELLED is terminal, expect 400
+PATCH {{baseUrl}}/api/orders/{{orderA.response.body.$.id}}/status
+Authorization: Bearer {{staff.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "status": "CONFIRMED"
+}
+
+############################################################
+# DEMO 3: Remove an order (UC13)
+############################################################
+
+### 3.1 Staff can't delete orders, expect 403
+DELETE {{baseUrl}}/api/orders/{{orderA.response.body.$.id}}
+Authorization: Bearer {{staff.response.body.$.token}}
+
+### 3.2 Admin deletes the cancelled order, expect 204
+DELETE {{baseUrl}}/api/orders/{{orderA.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+
+### 3.3 It's gone, expect 404
+GET {{baseUrl}}/api/orders/{{orderA.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+
+### 3.4 Stock is still 7, deleting doesn't restore it a second time (decision #3)
+GET {{baseUrl}}/api/products/{{milk.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+
+############################################################
+# DEMO 4: Delete a user who still owns an order (UC15 + UC19)
+############################################################
+
+### 4.1 Jon still owns order B, expect 409
+DELETE {{baseUrl}}/api/admin/users/{{jon.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+
+### 4.2 Reassign order B to root, expect 200 and userId is now root's (UC19)
+PUT {{baseUrl}}/api/orders/{{orderB.response.body.$.id}}/user
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "userId": {{admin.response.body.$.user.id}}
+}
+
+### 4.3 Jon owns nothing now, delete succeeds, expect 204
+DELETE {{baseUrl}}/api/admin/users/{{jon.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+
+### 4.4 Jon's old token stops working right away, expect 401
+GET {{baseUrl}}/api/orders
+Authorization: Bearer {{staff.response.body.$.token}}
+
+############################################################
+# DEMO 5: Lockout guard (UC15 decision #6)
+############################################################
+
+### 5.1 Admin tries to delete themselves, expect 400 on id
+DELETE {{baseUrl}}/api/admin/users/{{admin.response.body.$.user.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+
+############################################################
+# EXTRA (not in the live demo, keep for questions)
+############################################################
+
+### X1. UC16 regression: admin creates another admin, expect 201
+# @name admin2
+POST {{baseUrl}}/api/admin/users
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "username": "Second Admin",
+  "email": "admin2@example.com",
+  "password": "secret123"
+}
+
+### X2. Reassign to a user that doesn't exist, expect 404
+PUT {{baseUrl}}/api/orders/{{orderB.response.body.$.id}}/user
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "userId": 9999
+}
+
+### X3. Reassign to the current owner is a no-op, expect 200
+PUT {{baseUrl}}/api/orders/{{orderB.response.body.$.id}}/user
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "userId": {{admin.response.body.$.user.id}}
+}
+
+### X4. Deleting a PENDING order is rejected, expect 400 on status
+DELETE {{baseUrl}}/api/orders/{{orderB.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
+
+### X5. PENDING -> SHIPPED skips CONFIRMED, expect 400
+PATCH {{baseUrl}}/api/orders/{{orderB.response.body.$.id}}/status
+Authorization: Bearer {{admin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "status": "SHIPPED"
+}
+
+### X6. Delete a user that doesn't exist, expect 404
+DELETE {{baseUrl}}/api/admin/users/9999
+Authorization: Bearer {{admin.response.body.$.token}}
+
+### X7. Delete the second admin, allowed because root is still an admin, expect 204
+DELETE {{baseUrl}}/api/admin/users/{{admin2.response.body.$.id}}
+Authorization: Bearer {{admin.response.body.$.token}}
