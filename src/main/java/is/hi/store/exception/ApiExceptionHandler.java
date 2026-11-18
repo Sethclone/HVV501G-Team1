@@ -30,7 +30,7 @@ public class ApiExceptionHandler {
 	}
 
 	@ExceptionHandler(ProductIsReferencedException.class)
-	public ResponseEntity<ErrorResponse> handleUserHasOrders(ProductIsReferencedException ex, HttpServletRequest request) {
+	public ResponseEntity<ErrorResponse> handleProductIsReferenced(ProductIsReferencedException ex, HttpServletRequest request) {
 		return build(HttpStatus.CONFLICT, ex.getMessage(), request);
 	}
 
