@@ -9,7 +9,7 @@ Same deal as `Sprint1Contracts.md`, `Sprint2Contracts.md` and `Sprint3Contracts.
 - **Final Review:** Week 10.
 - **Milestone Goal:** final integration, and a submission-ready `main`.
 
-Sprint 3 delivered the order subsystem and admin user management (UC11, UC12, UC17, UC18, UC7). Sprint 4 closes the remaining use cases from the plan: **UC13 (Remove an order)**, **UC15 (Admin deletes an account)** and **UC19 (Reassign an order)**, plus final integration and polish. **UC16 was already delivered in Sprint 1** and only needs regression coverage. **UC14 (Modify order)** is carried over from Sprint 3.
+Sprint 3 delivered the order subsystem and admin user management (UC11, UC12, UC17, UC18, UC7). Sprint 4 closes the remaining use cases from the plan: **UC13 (Remove an order)**, **UC15 (Admin deletes an account)** and **UC19 (Reassign an order)**, plus final integration and polish. **UC16 was already delivered in Sprint 1**. **UC14 (Modify order)** is carried over from Sprint 3.
 The missing order-status transition endpoint from Sprint 3 is also in scope as a supporting endpoint. Without it, `CONFIRMED`, `SHIPPED` and `CANCELLED` can never be reached through the API, which makes UC13 and the UC18 `PENDING` guard impossible to demo end-to-end.
 
 ---
