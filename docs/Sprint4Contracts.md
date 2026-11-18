@@ -20,8 +20,8 @@ The missing order-status transition endpoint from Sprint 3 is also in scope as a
 |---|---|---|---|---|
 | **A** | Status transition endpoint + Remove Order (with stock restoration) | UC13 + supporting | Aron | ~14h |
 | **B** | Admin Deletes Account | UC15 | Unnar | ~8h |
-| **C** | Reassign Order | UC19 | Open | ~8h |
-| **D** | Modify order | UC14 | Open | ~10h |
+| **C** | Reassign Order | UC19 | Filip | ~8h |
+| **D** | Modify order | UC14 | Siggi | ~10h |
 
 ### Additional required features not in original plan
 
@@ -37,7 +37,7 @@ The missing order-status transition endpoint from Sprint 3 is also in scope as a
 |---|----------|----------|--------|
 | 1 | Order status transitions | Add `PATCH /api/orders/{id}/status` with `UpdateOrderStatusRequest { status }`. Allowed moves: `PENDING -> CONFIRMED`, `PENDING -> CANCELLED`, `CONFIRMED -> SHIPPED`, `CONFIRMED -> CANCELLED`, `SHIPPED -> CANCELLED` (refund). `CANCELLED` is terminal. Same status or any other move returns `400` with a `status` field error. Returns `OrderResponse`. |Confirmed|
 | 2 | Who can change status | Advancing to any state is open to all authenticated staff member, provided it conforms to decision #1. | Confirmed |
-| 3 | Stock restoration on cancel vs. delete | Moving an order to `CANCELLED` returns every item's quantity to `Product.stockQuantity` once. Deleting a `CANCELLED` order then only removes the record (no second restoration). Deleting an order in any other status returns `400` | Confirmed |
+| 3 | Stock restoration on cancel vs. delete | Moving an order to `CANCELLED` returns every item's quantity to `Product.stockQuantity` once. Deleting a `CANCELLED` order then only removes the record (no second restoration). Deleting an order in any other status than `CANCELLED` or `SHIPPED` returns `400` | Confirmed |
 | 4 | UC13 authorization & response | `DELETE /api/orders/{id}` is **ADMIN only** (UC13 says an admin issues the command). `204 No Content` on success, `404` if the order doesn't exist. | Confirmed |
 | 5 | UC15 deletion strategy | Hard-delete the `User` row (no `active` flag / soft delete). **ADMIN only**, `204 No Content`. A user who still owns orders cannot be deleted (`409 Conflict`) - reassign those orders with UC19 first. Stock movements are kept for inventory history, but their `performedBy` is cleared to `null` so the deleted user's identity is removed. | Confirmed |
 | 6 | UC15 lockout guards | Same shape as UC7: an admin can't delete themselves and the last remaining `ADMIN` can't be deleted. Both return `400` with a field error on `id`. Unknown user is `404`; non-admin is `403`. | Confirmed |

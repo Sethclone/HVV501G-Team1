@@ -24,10 +24,12 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.net.MalformedURLException;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.io.*;
 
 public interface ImageService {
     Resource getImageByFilename(String fileName);
@@ -38,18 +40,22 @@ class ImageServiceImplementation implements ImageService {
   
     public ImageServiceImplementation() {}
 
-    public Resource getImageByFilename(String fileName){
+    public Resource getImageByFilename(String fileName) {
 		if(fileName.contains("/")) {
 			throw new InvalidRequestException(List.of(new FieldErrorDetail("fileName", "Not a valid filename")));	
 		}
 
 		Path path = Paths.get("uploads/").resolve(fileName);
+		if(!path.toFile().exists())	
+			throw new ImageNotFoundException(fileName);
+		
 		Resource resource = null;
 		try {
-			resource = new UrlResource(path.toUri());	
-		} catch(Exception e) {
+			resource = new UrlResource(path.toUri());
+		} catch (MalformedURLException e) {	
 			throw new ImageNotFoundException(fileName);
 		}
+
         return resource;
     }
 }

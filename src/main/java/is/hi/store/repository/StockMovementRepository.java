@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import is.hi.store.entity.StockMovement;
 import is.hi.store.entity.StockMovement.MovementType;
 import is.hi.store.entity.User;
+import is.hi.store.entity.Product;
 import java.util.Optional;
 
 public interface StockMovementRepository extends Repository<StockMovement, Long>{
@@ -13,4 +14,7 @@ public interface StockMovementRepository extends Repository<StockMovement, Long>
 	@Modifying
 	@Query("update StockMovement s set s.performedBy = null where s.performedBy = ?1")
 	void clearPerformedBy(User user);
+	@Modifying
+	@Query("update StockMovement s set s.product = null where s.product = ?1")
+	void clearProduct(Product product);
 }

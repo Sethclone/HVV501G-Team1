@@ -1,24 +1,13 @@
 package is.hi.store.service;
 
-import is.hi.store.dto.UpdateOrderRequest;
-import is.hi.store.dto.CreateOrderRequest;
-import is.hi.store.dto.UpdateOrderStatusRequest;
-import is.hi.store.dto.FieldErrorDetail;
-import is.hi.store.dto.OrderItemRequest;
-import is.hi.store.dto.OrderItemResponse;
-import is.hi.store.dto.OrderResponse;
-import is.hi.store.dto.PagedResponse;
+import is.hi.store.dto.*;
 import is.hi.store.entity.Order;
 import is.hi.store.entity.Order.OrderStatus;
 import is.hi.store.entity.OrderItem;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
 import is.hi.store.entity.User.Role;
-import is.hi.store.exception.OrderNotFoundException;
-import is.hi.store.exception.ResourceNotFoundException;
-import is.hi.store.exception.InvalidCredentialsException;
-import is.hi.store.exception.InvalidRequestException;
-import is.hi.store.exception.ProductNotFoundException;
+import is.hi.store.exception.*;
 import is.hi.store.repository.OrderRepository;
 import is.hi.store.repository.ProductRepository;
 import is.hi.store.repository.UserRepository;
@@ -30,10 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public interface OrderService {
     OrderResponse createOrder(String email, CreateOrderRequest request);
@@ -43,6 +29,7 @@ public interface OrderService {
 	OrderResponse updateOrderStatus(Long id, UpdateOrderStatusRequest request);
     OrderResponse updateOrder(Long id, UpdateOrderRequest request);
 	void deleteOrder(Long id);
+    OrderResponse reassignOrder(Long orderId, ReassignOrderRequest request);
 }
 
 @Service
@@ -241,8 +228,8 @@ class OrderServiceImplementation implements OrderService {
 	@Transactional
 	public void deleteOrder(Long id) {	
 		Order order = orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
-		if(order.getStatus() != OrderStatus.CANCELLED)
-			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Only cancelled orders can be deleted")));
+		if(order.getStatus() == OrderStatus.PENDING || order.getStatus() == OrderStatus.CONFIRMED)
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("status", "Orders can only be deleted if they are CANCELLED or SHIPPED")));
 		orderRepository.delete(order);
 	}
 
@@ -333,5 +320,26 @@ class OrderServiceImplementation implements OrderService {
         if (!errors.isEmpty()) {
             throw new InvalidRequestException(errors);
         }
+    }
+  
+    public OrderResponse reassignOrder(Long orderId, ReassignOrderRequest request) {
+        if (request == null || request.getUserId() == null) {
+            throw new InvalidRequestException(
+                    List.of(new FieldErrorDetail("userId", "userId is required")));
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        User target = userRepository.findById(request.getUserId());
+        if (target == null) {
+            throw new UserNotFoundException(request.getUserId());
+        }
+
+        if (!Objects.equals(order.getUser().getId(), target.getId())) {
+            order.setUser(target);
+            orderRepository.save(order);
+        }
+        return mapToResponse(order);
     }
 }

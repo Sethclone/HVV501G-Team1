@@ -5,11 +5,13 @@ import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
 import is.hi.store.entity.StockMovement;
 import is.hi.store.exception.ProductNotFoundException;
+import is.hi.store.exception.ProductIsReferencedException;
 import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.repository.ProductRepository;
 import is.hi.store.repository.UserRepository;
 import is.hi.store.repository.StockMovementRepository;
+import is.hi.store.repository.OrderItemRepository;
 import is.hi.store.util.ImageStorage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -45,16 +47,18 @@ class ProductServiceImplementation implements ProductService {
     private final ProductRepository productRepository;
 	private final UserRepository userRepository;
 	private final StockMovementRepository stockMovementRepository;
-    private final String uploadDirectory = "uploads/";
+	private final OrderItemRepository orderItemRepository;
   
     public ProductServiceImplementation(
 		ProductRepository productRepository,
 		UserRepository userRepository,
-		StockMovementRepository stockMovementRepository
+		StockMovementRepository stockMovementRepository,
+		OrderItemRepository orderItemRepository
 	) {
         this.productRepository = productRepository;
 		this.userRepository = userRepository;
 		this.stockMovementRepository = stockMovementRepository;
+		this.orderItemRepository =orderItemRepository;
     }
 
     public ProductResponse getProductById(Long id){
@@ -170,6 +174,11 @@ class ProductServiceImplementation implements ProductService {
     @Transactional
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+
+		if(orderItemRepository.existsByProduct(product)) {
+			throw new ProductIsReferencedException(product.getId());
+		}
+		stockMovementRepository.clearProduct(product);
         productRepository.delete(product);
     }
 
