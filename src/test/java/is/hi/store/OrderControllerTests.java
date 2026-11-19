@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -117,6 +118,11 @@ class OrderControllerTests {
 
 	private org.springframework.test.web.servlet.ResultActions removeOrder(String token, long orderId) throws Exception {
 		return mvc.perform(delete("/api/orders/"+orderId).header("Authorization", "Bearer " + token));
+	}
+
+	private org.springframework.test.web.servlet.ResultActions updateOrder(String token, long orderId, String json) throws Exception {
+		return mvc.perform(put("/api/orders/" + orderId).header("Authorization", "Bearer " + token)
+			.contentType(MediaType.APPLICATION_JSON).content(json));
 	}
 
 	//Tests for UC11, UC12, UC17, UC18, UC13
@@ -395,5 +401,72 @@ class OrderControllerTests {
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.fieldErrors[0].field").value("status"));
 	}
-	
+
+	//UC14
+	@Test
+	void updateOrderSuccess() throws Exception {
+		String token = staffToken("update-order-ok@example.com");
+		Product p1 = productWithStock(5, 100);
+		Product p2 = productWithStock(10, 50);
+
+		long orderId = createOrderAndReturnId(token, "{\"items\":" + List.of(new OrderItemRequest(p1.getId(), 3)) + "}");
+
+		p1 = productRepository.findById(p1.getId()).orElseThrow();
+		p1.setPrice(new BigDecimal(150));
+		productRepository.save(p1);
+
+		List<OrderItemRequest> updatedItems = List.of(
+			new OrderItemRequest(p1.getId(), 4),
+			new OrderItemRequest(p2.getId(), 2)
+		);
+
+		updateOrder(token, orderId, "{\"items\":" + updatedItems + "}")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.items.length()").value(2))
+			.andExpect(jsonPath("$.totalPrice").value(700));
+
+		assertEquals(1, productRepository.findById(p1.getId()).orElseThrow().getStockQuantity());
+		assertEquals(8, productRepository.findById(p2.getId()).orElseThrow().getStockQuantity());
+	}
+
+	@Test
+	void updateOrderNotPending() throws Exception {
+		String token = staffToken("update-order-np@example.com");
+		Product p = productWithStock(5, 100);
+		long orderId = createOrderAndReturnId(token, "{\"items\":" + List.of(new OrderItemRequest(p.getId(), 2)) + "}");
+
+		updateStatus(token, orderId, "CONFIRMED").andExpect(status().isOk());
+
+		updateOrder(token, orderId, "{\"items\":" + List.of(new OrderItemRequest(p.getId(), 1)) + "}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fieldErrors[0].field").value("status"));
+	}
+
+	@Test
+	void updateOrderInsufficientStock() throws Exception {
+		String token = staffToken("update-order-stock@example.com");
+		Product p = productWithStock(5, 100);
+		long orderId = createOrderAndReturnId(token, "{\"items\":" + List.of(new OrderItemRequest(p.getId(), 2)) + "}");
+
+		updateOrder(token, orderId, "{\"items\":" + List.of(new OrderItemRequest(p.getId(), 6)) + "}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fieldErrors[0].field").value("quantity"));
+
+		assertEquals(3, productRepository.findById(p.getId()).orElseThrow().getStockQuantity());
+	}
+
+	@Test
+	void updateOrderInvalidItemsAndNotFound() throws Exception {
+		String token = staffToken("update-order-bad@example.com");
+		Product p = productWithStock(5, 100);
+		long orderId = createOrderAndReturnId(token, "{\"items\":" + List.of(new OrderItemRequest(p.getId(), 1)) + "}");
+
+		updateOrder(token, orderId, "{\"items\":[]}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fieldErrors[0].field").value("items"));
+
+		updateOrder(token, 999999L, "{\"items\":" + List.of(new OrderItemRequest(p.getId(), 1)) + "}")
+			.andExpect(status().isNotFound());
+	}
+
 }
