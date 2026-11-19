@@ -58,7 +58,7 @@ public class AuthController {
 	public CommandLineRunner commandLineRunner() {
 		return args -> {
 			if(!userService.findExistsByRole(Role.ADMIN))
-				authService.register(new RegisterRequest("root", "root@example.com", env.get("ROOT_PASSWORD")), Role.ADMIN);
+				authService.register(new RegisterRequest("root", "root@example.com", env.containsKey("ROOT_PASSWORD") ? env.get("ROOT_PASSWORD") : "password"), Role.ADMIN);
 		};
 	}
 }
