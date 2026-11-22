@@ -13,7 +13,8 @@ Use cases are described in [docs/Verkefni1.md](docs/Verkefni1.md). Sprint plans 
 ```
 
 - Runs on `http://localhost:8090`. The database is H2 in memory, so data resets on restart.
-- On startup an admin is seeded: `root@example.com` / `password`.
+- On startup an admin is seeded: `root@example.com` / `password` by default or overridden by ROOT_PASSWORD environment variable.
+- Deployed version: https://hvv501g-team1.onrender.com/
 - Log in with `POST /api/auth/login`, then send `Authorization: Bearer <token>` on other requests.
 - Example requests: [REST_CLIENT/](REST_CLIENT/)
 
