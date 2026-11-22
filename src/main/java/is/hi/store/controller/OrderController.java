@@ -1,8 +1,6 @@
 package is.hi.store.controller;
 
-import is.hi.store.dto.CreateOrderRequest;
-import is.hi.store.dto.OrderResponse;
-import is.hi.store.dto.PagedResponse;
+import is.hi.store.dto.*;
 import is.hi.store.service.OrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,4 +47,35 @@ public class OrderController {
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(orderService.getOrders(status, page, size));
     }
+
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
+		orderService.deleteOrder(id);
+		return ResponseEntity.noContent().build();
+	}
+
+	@PatchMapping("/{id}/status")
+	public ResponseEntity<OrderResponse> updateStatus(
+		@PathVariable Long id,
+		@RequestBody UpdateOrderStatusRequest request
+	) {
+		OrderResponse response = orderService.updateOrderStatus(id, request);
+		return ResponseEntity.ok(response);
+	}
+
+  @PutMapping("/{id}")
+  public ResponseEntity<OrderResponse> updateOrder(
+          @PathVariable Long id,
+          @RequestBody UpdateOrderRequest request
+  ) {
+      OrderResponse response = orderService.updateOrder(id, request);
+      return ResponseEntity.ok(response);
+  }
+  
+	@PutMapping("/{id}/user")
+	public ResponseEntity<OrderResponse> reassignOrder(
+			@PathVariable Long id,
+			@RequestBody ReassignOrderRequest request) {
+		return ResponseEntity.ok(orderService.reassignOrder(id, request));
+	}
 }

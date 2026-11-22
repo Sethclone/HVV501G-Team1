@@ -59,13 +59,19 @@ apply to tokens that were already issued (decisions #8 and #9 in the Sprint 3 co
 
 UC7 has integration tests (`AdminControllerTests`). The order endpoints (UC11, UC12, UC17, UC18) don't have tests yet.
 
+## Sprint 4
+| UC | Feature | Endpoint | Status |
+|----|---|----------|--------|
+| UC13 | Delete orders |`DELETE /api/orders/{id}`    | Done |
+| UC14 | Change the items that make up an order |`PUT /api/orders/{id}`   | Done |
+| UC14 | Change the status of orders, restore stock if order is cancelled| `PATCH /api/orders/{id}/status`  | Done |
+| UC15 | Admin deletes a user account | `DELETE /api/admin/users/{id}` | Done |
+| UC19 | Reassign order to another user| `PUT /api/orders/{id}/user`  | Done |
+
 ## Exceptions and known issues
 
 | Item | Notes |
 |---|---|
 | UC6 email | Users can't change their own email. It's a work email set by an admin (decision #5 in the Sprint 2 contracts). |
-| Image limits (UC2, UC20) | Allowed image formats and max size are still undecided (Sprint 1 decision #2), so no limits are enforced. |
 | Stock concurrency | Two stock removals or orders at the exact same moment could both pass the stock check. No row locking yet. |
-| UC18 status check | Only `PENDING` orders can have items removed, but nothing changes an order's status yet (UC14 isn't done), so the rejection can't be demoed. |
 | UC7 lockout guards | Not atomic: two admins demoting each other at the same moment could both succeed. |
-| Deleting a product in an order | Returns `500` (foreign key violation) instead of a clear error. |

@@ -1,5 +1,7 @@
 package is.hi.store.service;
 
+import is.hi.store.repository.OrderRepository;
+import is.hi.store.repository.StockMovementRepository;
 import is.hi.store.repository.UserRepository;
 import is.hi.store.entity.User;
 import is.hi.store.entity.User.Role;
@@ -9,12 +11,15 @@ import is.hi.store.dto.UpdateAccountRequest;
 import is.hi.store.exception.EmailAlreadyExistsException;
 import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.exception.InvalidRequestException;
+import is.hi.store.exception.UserHasOrdersException;
 import is.hi.store.exception.UserNotFoundException;
 import is.hi.store.dto.UploadProfilePicRequest;
+import is.hi.store.util.ImageStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
@@ -37,6 +42,7 @@ public interface UserService {
 	User uploadProfilePicture(String email, UploadProfilePicRequest request);
 	User adminUpdateUser(String actorEmail, long id, AdminUpdateUserRequest request);
 	String resetPassword(long id);
+	void deleteUser(String actorEmail, long id);
 }
 
 @Service
@@ -45,6 +51,10 @@ class UserServiceImplementation implements UserService {
 	private UserRepository userRepository;
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+	@Autowired
+	private OrderRepository orderRepository;
+	@Autowired
+	private StockMovementRepository stockMovementRepository;
 
 	public boolean findExistsByRole(Role role) {
 		return userRepository.findExistsByRole(role);
@@ -134,6 +144,24 @@ class UserServiceImplementation implements UserService {
 		return temporaryPassword;
 	}
 
+	// UC15. Hard delete. Same lockout guards as UC7, owned orders must be reassigned (UC19) first.
+	// The user's existing tokens stop working on the next request (JwtAuthenticationFilter finds no user).
+	@Transactional
+	public void deleteUser(String actorEmail, long id) {
+		User user = findUser(id);
+		if (user.getEmail().equals(actorEmail)) {
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("id", "Admins cannot delete themselves")));
+		}
+		if (user.getRole() == Role.ADMIN && userRepository.countByRole(Role.ADMIN) <= 1) {
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("id", "Cannot delete the last admin")));
+		}
+		if (orderRepository.existsByUser(user)) {
+			throw new UserHasOrdersException(id);
+		}
+		stockMovementRepository.clearPerformedBy(user);
+		userRepository.delete(user);
+	}
+
 	private static final SecureRandom RANDOM = new SecureRandom();
 
 	private User findUser(long id) {
@@ -168,29 +196,21 @@ class UserServiceImplementation implements UserService {
 	}
 
 	public User uploadProfilePicture(String email, UploadProfilePicRequest request) {
-		String uploadDirectory = "uploads/";
 		User user = userRepository.findByEmail(email)
 			.orElseThrow(() -> new InvalidCredentialsException("Account no longer Exists"));
 
+		if(request == null || request.getImage() == null)
+			throw new InvalidRequestException(List.of(new FieldErrorDetail("image", "image must be provided")));
 		MultipartFile file = request.getImage();
-        if (file != null) {
-            try {
-                LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-                String timestamp = now.format(formatter);
-                String fileName = timestamp + "_" + file.getOriginalFilename();
-                Path filePath = Paths.get(uploadDirectory).resolve(fileName);
+		String imageUrl = null;
+		try {
+			imageUrl = ImageStorage.save(file);	
+		} catch (IOException e) {
+       		throw new RuntimeException("Uploading file failed", e);
+		}
 
-                Files.copy(file.getInputStream(), filePath);
-                String imageUrl = "/images/" + fileName;
-
-				user.setProfilePictureURL(imageUrl);
-				userRepository.save(user);
-            } catch (IOException e) {
-				//Need to change type of exception
-                throw new RuntimeException("Uploading file failed", e);
-            }
-        }
+		user.setProfilePictureURL(imageUrl);
+		userRepository.save(user);
 
 		return user;
 	}

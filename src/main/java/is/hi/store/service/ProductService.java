@@ -5,11 +5,14 @@ import is.hi.store.entity.Product;
 import is.hi.store.entity.User;
 import is.hi.store.entity.StockMovement;
 import is.hi.store.exception.ProductNotFoundException;
+import is.hi.store.exception.ProductIsReferencedException;
 import is.hi.store.exception.InvalidRequestException;
 import is.hi.store.exception.InvalidCredentialsException;
 import is.hi.store.repository.ProductRepository;
 import is.hi.store.repository.UserRepository;
 import is.hi.store.repository.StockMovementRepository;
+import is.hi.store.repository.OrderItemRepository;
+import is.hi.store.util.ImageStorage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,16 +47,18 @@ class ProductServiceImplementation implements ProductService {
     private final ProductRepository productRepository;
 	private final UserRepository userRepository;
 	private final StockMovementRepository stockMovementRepository;
-    private final String uploadDirectory = "uploads/";
+	private final OrderItemRepository orderItemRepository;
   
     public ProductServiceImplementation(
 		ProductRepository productRepository,
 		UserRepository userRepository,
-		StockMovementRepository stockMovementRepository
+		StockMovementRepository stockMovementRepository,
+		OrderItemRepository orderItemRepository
 	) {
         this.productRepository = productRepository;
 		this.userRepository = userRepository;
 		this.stockMovementRepository = stockMovementRepository;
+		this.orderItemRepository =orderItemRepository;
     }
 
     public ProductResponse getProductById(Long id){
@@ -113,35 +118,24 @@ class ProductServiceImplementation implements ProductService {
             request.getStockQuantity()
         );
 
-        String imageUrl = null;
-        MultipartFile file = request.getImage();
+		String imageUrl = null;
+		MultipartFile file = request.getImage();
+		try {
+			imageUrl = ImageStorage.save(file);
+		} catch (IOException e) {
+			throw new RuntimeException(e.getMessage());
+		}
 
-        if (file != null) {
-            try {
-                LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-                String timestamp = now.format(formatter);
-                String fileName = timestamp + "_" + file.getOriginalFilename();
-                Path filePath = Paths.get(uploadDirectory).resolve(fileName);
+		Product product = new Product();
+		product.setName(request.getName());
+		product.setCategory(request.getCategory());
+		product.setPrice(request.getPrice());
+		// Default to 0, a null stock would crash stock movements (UC1) with a 500.
+		product.setStockQuantity(request.getStockQuantity() == null ? 0 : request.getStockQuantity());
+		product.setImageUrl(imageUrl);
 
-                Files.copy(file.getInputStream(), filePath);
-                imageUrl = "/images/" + fileName;
-            } catch (IOException e) {
-                throw new RuntimeException("you sleaze failed", e);
-            }
-        }
-
-        Product product = new Product();
-        product.setName(request.getName());
-        product.setCategory(request.getCategory());
-        product.setPrice(request.getPrice());
-        // Default to 0, a null stock would crash stock movements (UC1) with a 500.
-        product.setStockQuantity(request.getStockQuantity() == null ? 0 : request.getStockQuantity());
-        product.setImageUrl(imageUrl);
-
-        Product savedProduct = productRepository.save(product);
-
-        return mapToResponse(savedProduct);
+		Product savedProduct = productRepository.save(product);
+		return mapToResponse(savedProduct);
     }
 
 	public ProductResponse flagProduct(long id, Boolean flag) {
@@ -180,6 +174,11 @@ class ProductServiceImplementation implements ProductService {
     @Transactional
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+
+		if(orderItemRepository.existsByProduct(product)) {
+			throw new ProductIsReferencedException(product.getId());
+		}
+		stockMovementRepository.clearProduct(product);
         productRepository.delete(product);
     }
 

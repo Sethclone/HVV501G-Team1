@@ -2,6 +2,7 @@ package is.hi.store;
 
 import com.jayway.jsonpath.JsonPath;
 import is.hi.store.dto.RegisterRequest;
+import is.hi.store.dto.OrderItemRequest;
 import is.hi.store.entity.Product;
 import is.hi.store.entity.User.Role;
 import is.hi.store.repository.ProductRepository;
@@ -14,13 +15,21 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.*;
+import java.math.BigDecimal;
+
 // UC1 - POST /api/products/{id}/stock-movements, UC9 - PATCH /api/products/{id}/reorder-flag
+// UC10 - DELETE/PATCH /api/products/{id}, UC8 GET /api/products/{id}
+// UC3 - GET /api/products?category=&minPrice=&maxPrice=
 @SpringBootTest
 @AutoConfigureMockMvc
 class ProductControllerTests {
@@ -42,10 +51,46 @@ class ProductControllerTests {
 		return JsonPath.read(body, "$.token");
 	}
 
+	private String rootToken() throws Exception {
+		return login("root@example.com", "password");
+	}
+
+	private String login(String email, String password) throws Exception {
+		String body = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}"))
+			.andExpect(status().isOk())
+			.andReturn().getResponse().getContentAsString();
+		return JsonPath.read(body, "$.token");
+	}
+
 	private Product productWithStock(int stock) {
 		Product product = new Product();
 		product.setName("Widget");
 		product.setStockQuantity(stock);
+		return productRepository.save(product);
+	}
+	private Product fullProduct(String name, String category, int stock, int price) {
+		Product product = new Product();
+		product.setName(name);
+		product.setCategory(category);
+		product.setStockQuantity(stock);
+		product.setPrice(new BigDecimal(price));
+		return productRepository.save(product);
+	}
+	private Product productWithStockAndPrice(int stock, int price) {
+		Product product = new Product();
+		product.setName("Widget");
+		product.setStockQuantity(stock);
+		product.setPrice(new BigDecimal(price));
+		return productRepository.save(product);
+	}
+
+	private Product productWithPriceAndCategory(int price, String category) {
+		Product product = new Product();
+		product.setName("Widget");
+		product.setStockQuantity(5);
+		product.setPrice(new BigDecimal(price));
+		product.setCategory(category);
 		return productRepository.save(product);
 	}
 
@@ -54,9 +99,31 @@ class ProductControllerTests {
 			.contentType(MediaType.APPLICATION_JSON).content(json));
 	}
 
+	private org.springframework.test.web.servlet.ResultActions createOrder(String token, String json) throws Exception {
+		return mvc.perform(post("/api/orders").header("Authorization", "Bearer " + token)
+			.contentType(MediaType.APPLICATION_JSON).content(json));
+	}
+
 	private org.springframework.test.web.servlet.ResultActions flag(String token, long productId, String json) throws Exception {
 		return mvc.perform(patch("/api/products/" + productId + "/reorder-flag").header("Authorization", "Bearer " + token)
 			.contentType(MediaType.APPLICATION_JSON).content(json));
+	}
+
+	private org.springframework.test.web.servlet.ResultActions viewProduct(String token, long productId) throws Exception {
+		return mvc.perform(get("/api/products/" + productId).header("Authorization", "Bearer " + token));
+	}
+
+	private org.springframework.test.web.servlet.ResultActions updateProduct(String token, long productId, String json) throws Exception {
+		return mvc.perform(patch("/api/products/" + productId).header("Authorization", "Bearer " + token)
+			.contentType(MediaType.APPLICATION_JSON).content(json));
+	}
+
+	private org.springframework.test.web.servlet.ResultActions filterProducts(String token, String category, int minPrice, int maxPrice) throws Exception {
+		return mvc.perform(get("/api/products?category="+category+"&minPrice="+maxPrice+"&maxPrice="+maxPrice).header("Authorization", "Bearer " + token));
+	}
+	
+	private org.springframework.test.web.servlet.ResultActions deleteProduct(String token, long productId) throws Exception {
+		return mvc.perform(delete("/api/products/" + productId).header("Authorization", "Bearer " + token));
 	}
 
 	private int stockOf(Product product) {
@@ -182,5 +249,82 @@ class ProductControllerTests {
 		String token = staffToken("rf-404@example.com");
 		flag(token, 999999, "{\"flagged\":true}")
 			.andExpect(status().isNotFound());
+	}
+
+	//UC10
+	@Test
+	void deletingProductWithMovementRecordIs204() throws Exception {	
+		String token = rootToken();
+		Product product = productWithStock(5);
+		move(token, product.getId(), "{\"quantity\":2,\"type\":\"REMOVE\"}").andExpect(status().isOk());
+
+		deleteProduct(token, product.getId())
+			.andExpect(status().isNoContent());
+	}
+
+	@Test
+	void deletingProductWithOrderItemIs409() throws Exception {
+		String token = rootToken();
+		Product product = productWithStockAndPrice(20,100);
+
+		List<OrderItemRequest> items = List.of(
+			new OrderItemRequest(product.getId(), 6)
+		);
+
+		createOrder(token, "{\"items\":"+items+"}");
+		deleteProduct(token,product.getId())
+			.andExpect(status().isConflict());
+	}
+
+	@Test
+	void updateProductSuccess() throws Exception {
+		String token = staffToken("update-product-success@example.com");
+
+		Product product = fullProduct("Shoe", "Clothing", 100, 200);
+
+		updateProduct(token, product.getId(), "{\"category\":\"Food\", \"name\":\"Pickle\", \"price\":10}")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("Pickle"))
+			.andExpect(jsonPath("$.category").value("Food"))
+			.andExpect(jsonPath("$.stockQuantity").value(100))
+			.andExpect(jsonPath("$.price").value(10));
+	}
+
+	//UC3
+	@Test
+	void filterProductsSuccess() throws Exception {
+		String token = staffToken("filter-success@example.com");
+
+		Product product1 = productWithPriceAndCategory(100, "Tool");
+		Product product2 = productWithPriceAndCategory(20, "Tool");
+		Product product3 = productWithPriceAndCategory(50, "Food");
+		Product product4 = productWithPriceAndCategory(200, "Tool");
+		Product product5 = productWithPriceAndCategory(300, "Shoe");
+
+		String bodyPending = filterProducts(token, "Tool", 100, 200)
+			.andExpect(status().isOk())
+			.andReturn().getResponse().getContentAsString();
+
+		List<String> category = JsonPath.read(bodyPending, "$.content[*].category");
+		List<Double> price = JsonPath.read(bodyPending, "$.content[*].price");
+		
+		assertTrue(category.stream().allMatch(i -> i.equals("Tool")));
+		assertTrue(price.stream().allMatch(i -> i >= 100));
+		assertTrue(price.stream().allMatch(i -> i <= 200));
+	}
+
+	//UC8
+	@Test
+	void viewProductSuccess() throws Exception {
+		String token = staffToken("view-product-success@example.com");
+
+		Product product = fullProduct("Shoe", "Clothing", 100, 200);
+
+		viewProduct(token, product.getId())
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("Shoe"))
+			.andExpect(jsonPath("$.category").value("Clothing"))
+			.andExpect(jsonPath("$.stockQuantity").value(100))
+			.andExpect(jsonPath("$.price").value(200));
 	}
 }

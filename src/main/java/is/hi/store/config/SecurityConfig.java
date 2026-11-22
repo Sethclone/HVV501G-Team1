@@ -44,6 +44,8 @@ public class SecurityConfig {
 				.requestMatchers(HttpMethod.PUT, "/api/users/me").authenticated()
 				.requestMatchers("/api/auth/register").hasRole("ADMIN")
 				.requestMatchers("/api/admin/**").hasRole("ADMIN")
+				.requestMatchers(HttpMethod.DELETE, "/api/orders/*").hasRole("ADMIN")
+					.requestMatchers(HttpMethod.PUT, "/api/orders/*/user").hasRole("ADMIN")
 				// Not authenticated(): a PASSWORD_CHANGE_REQUIRED user has no role and is kept out (403).
 				.anyRequest().hasAnyRole("STAFF", "ADMIN")
 			)
