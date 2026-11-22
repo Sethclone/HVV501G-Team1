@@ -59,14 +59,14 @@ apply to tokens that were already issued (decisions #8 and #9 in the Sprint 3 co
 
 UC7 has integration tests (`AdminControllerTests`). The order endpoints (UC11, UC12, UC17, UC18) don't have tests yet.
 
-# Sprint 4
+## Sprint 4
 | UC | Feature | Endpoint | Status |
 |----|---|----------|--------|
-| 13 | Delete orders |`DELETE /api/orders/{id}`    | Done |
-| 14 | Change the items that make up an order |`PUT /api/orders/{id}`   | Done |
-| 14 | Change the status of orders, restore stock if order is cancelled| `PATCH /api/orders/{id}/status`  | Done |
-| 15 | Admin deletes a user account | `DELETE /api/admin/users/{id}` | Done |
-| 19 | Reassign order to another user| `PUT /api/orders/{id}/user`  | Done |
+| UC13 | Delete orders |`DELETE /api/orders/{id}`    | Done |
+| UC14 | Change the items that make up an order |`PUT /api/orders/{id}`   | Done |
+| UC14 | Change the status of orders, restore stock if order is cancelled| `PATCH /api/orders/{id}/status`  | Done |
+| UC15 | Admin deletes a user account | `DELETE /api/admin/users/{id}` | Done |
+| UC19 | Reassign order to another user| `PUT /api/orders/{id}/user`  | Done |
 
 ## Exceptions and known issues
 
